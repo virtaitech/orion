@@ -1,0 +1,8 @@
+pillow
+scipy==1.2.0
+matplotlib==3.0
+contextlib2
+lxml
+cython
+jupyter
+requests
