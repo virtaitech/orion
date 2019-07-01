@@ -7,7 +7,7 @@
 * 我们还不支持PyTorch通过RDMA网络使用远程GPU资源
 * 在使用多卡训练时，需要用GLOO作为后端，而不是默认的NCCL
 
-在我们的[一篇技术博客](../../blogposts/use-pytorch.md)里，我们介绍了如何让PyTorch使用多块Orion vGPU在Imagenet数据集上训练Resnet50模型。
+在我们的[一篇技术博客](../../blogposts/pytorch_models.md)里，我们介绍了如何让PyTorch使用多块Orion vGPU在Imagenet数据集上训练Resnet50模型。
 
 如果要构建镜像，用户需要按照下面的步骤从源码编译PyTorch和TorchVision。
 

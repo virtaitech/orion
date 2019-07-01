@@ -2,9 +2,9 @@
 本文档主要包括如下部分：
 * Orion  vGPU软件架构
 * Orion  vGPU软件服务器端安装部署
-* 场景一：Docker 容器中使用本地节点GPU资源
-* 场景二：KVM 虚拟机中使用本地节点GPU资源
-* 场景三：在没有GPU的节点上使用远程节点上的GPU资源
+* [场景一](container.md)：Docker 容器中使用本地节点GPU资源
+* [场景二](kvm.md)：KVM 虚拟机中使用本地节点GPU资源
+* [场景三](remote_rdma.md)：在没有GPU的节点上使用远程节点上的GPU资源
 * 附录
 
 本文档的目标是使读者能够快速在1-2台机器上部署Orion vGPU软件，并使用Orion vGPU进行深度学习加速。在三个典型场景中，我们展示在不同的环境下，如何运用Orion vGPU软件**无修改**地使用官方 TensorFlow 1.12 进行模型训练与推理。
@@ -268,7 +268,7 @@ INFO[1738] Adding new NVidia GPU to host 127.0.0.1 (GPU-d081d24f-816a-0324-1ada-
 
 * 本例中，我们在容器内使用一块Orion vGPU，该vGPU位于本地物理机上的一块 NVIDIA GTX 1080Ti 显卡。
 * 容器用`docker run`命令启动，不依赖于`nvidia-docker`，也没有将物理机上的GPU设备直通穿透（passthrough）到在容器内部。通过安装Orion vGPU软件，容器得以使用Orion vGPU资源加速计算。
-* 安装部署完成后，我们会在容器中启动 `Juypter Notebook`，使用TensorFlow 1.12的eager execution模式进行 pix2pix 模型训练与推理 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/eager/python/examples/pix2pix/pix2pix_eager.ipynb
+* 安装部署完成后，我们会在容器中启动 `Juypter Notebook`，使用TensorFlow 1.12的eager execution模式进行 pix2pix 模型训练与推理 https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/eager/python/examples/pix2pix/pix2pix_eager.ipynb
 
 ## [KVM虚拟机中使用本地节点GPU资源](kvm.md)
   

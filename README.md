@@ -1,6 +1,6 @@
 # Orion AI Platform
 
-Orion vGPU软件由[VirtAI Technologies Company Limited](https://virtai.tech)开发，是一个为云或者数据中心内的AI应用、CUDA应用提供GPU资源池化、GPU虚拟化能力的系统软件。通过高效的通讯机制连接应用与GPU资源池，使得AI应用、CUDA应用可以不受GPU物理位置的限制，部署在云或者数据中心内任何一个物理机、Container或者VM内。
+Orion vGPU软件由[VirtAI Tech 驱动科技](https://virtai.tech)开发，是一个为云或者数据中心内的AI应用、CUDA应用提供GPU资源池化、GPU虚拟化能力的系统软件。通过高效的通讯机制连接应用与GPU资源池，使得AI应用、CUDA应用可以不受GPU物理位置的限制，部署在云或者数据中心内任何一个物理机、Container或者VM内。
 
 * 兼容已有的AI应用和CUDA应用，无需修改已有应用程序。
 * 细粒度的GPU虚拟化支持。
@@ -20,6 +20,8 @@ Orion vGPU软件用户手册
 
 # <a id="tech-blog"></a>More
 我们通过若干技术博客，向用户展示更多的Orion vGPU软件使用场景。
+
+* [TensorFlow 使用Orion vGPU软件加速模型训练与推理](./blogposts/tensorflow_models.md)
 
 # Contact Us
 
