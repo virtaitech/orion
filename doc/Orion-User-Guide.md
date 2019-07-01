@@ -58,7 +58,7 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 该组件为一个运行环境，其模拟了NVidia CUDA的运行库环境，为CUDA程序提供了API接口兼容的全新实现。通过和Orion其他功能组件的配合，为CUDA应用程序虚拟化了一定数量的虚拟GPU（Orion vGPU）。  
 使用CUDA动态链接库的CUDA应用程序可以通过操作系统环境设置，使得一个CUDA应用程序在运行时由操作系统负责链接到Orion Client提供的动态链接库上。由于Orion Client模拟了NVidia CUDA运行环境，因此CUDA应用程序可以透明无修改地直接运行在Orion vGPU之上。
 
-## Orion Controler
+## Orion Controller
 该组件为一个长运行的服务程序，其负责整个GPU资源池的资源管理。其响应Orion Client的vGPU请求，并从GPU资源池中为Orion Client端的CUDA应用程序分配并返回Orion vGPU资源。  
 该组件可以部署在数据中心任何网络可到达的系统当中。每个资源池部署一个该组件。资源池的大小取决于IT管理的需求，可以是整个数据中心的所有GPU作为一个资源池，也可以每个GPU服务器作为一个独立的资源池。
 
@@ -203,7 +203,7 @@ Orion Client可以通过三类方法配置运行参数
 
 **上述方法中，通过环境变量配置的优先级最高，系统 /etc 目录中配置文件的优先级最低**
 
-Orion Clint的配置中分为静态配置部分和动态配置部分。
+Orion Client的配置中分为静态配置部分和动态配置部分。
 * 静态配置部分指的是在目标环境中每次运行CUDA应用程序都保持不变的部分。
 * 动态配置部分指的是根据CUDA应用程序使用的Orion vGPU资源不同而不同的配置。
 

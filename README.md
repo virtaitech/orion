@@ -22,9 +22,10 @@ Orion vGPU软件用户手册
 我们通过若干技术博客，向用户展示更多的Orion vGPU软件使用场景。
 
 * [TensorFlow 使用Orion vGPU软件加速模型训练与推理](./blogposts/tensorflow_models.md)
+* [PyTorch 使用Orion vGPU软件加速模型训练与推理](./blogposts/pytorch_models.md)
 
 # Contact Us
 
-如果您在使用本产品的过程中遇到问题，欢迎在GitHub上提交issue， 或者通过邮件联系我们：
+如果您在使用本产品的过程中遇到问题，欢迎在GitHub上提交issue，或者通过邮件联系我们：
 
 feedback@virtaitech.com

@@ -213,6 +213,13 @@ Done
 头部的`VirtaiTech Resource. Build-cuda`表明应用程序成功使用了Orion Client Runtime。否则，用户需要检查以下事项：
 
 * 应用程序是否动态链接到CUDA Runtime? 对官方TensorFlow来说，这一点是满足的。而对于某些应用，例如NVIDIA官方Samples，Makefile里面的编译选项是静态编译，因此需要重新编译。特别地，对于CMake编译的程序，例如PyTorch，需要检查库的RPATH，把Orion Client Runtime安装到一样的路径下。一般安装到`/usr/local/cuda-9.0`，再软链接`/usr/local/cuda => /usr/local/cuda-9.0`即可。
+
+    ```bash
+    mkdir /usr/local/cuda-9.0
+    ./install-client -d /usr/local/cuda-9.0
+    ln -s /usr/local/cuda-9.0 /usr/local/cuda
+    ```
+    
 * 运行`install-client`包时，如果没有安装到默认路径，需要确保在每个terminal里面都设置`LD_LIBRARY_PATH=<your-installation-path>:$LID_LIBRARY_PATH`。
 
 程序退出时的`Client exits with allocation ID`表明用户从Orion Controller申请到了资源。否则，说明资源申请失败：
