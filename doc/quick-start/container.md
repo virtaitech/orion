@@ -120,18 +120,14 @@ docker pull virtaitech/orion-client:tf1.12-py3
 
 ### 启动容器
 
-如上文所述，我们在用`docker run`命令启动容器时，需要用`-e`参数设置上一节介绍的环境变量，并用`-v`参数将创建的`/dev/shm/orionsock0`共享内存挂载到容器内的`/dev/shm`目录下。为了方便运行Jupyter Notebook训练TensorFlow官方提供的`pix2pix`模型例子，我们假设执行`docker run`的目录下已经用
+如上文所述，我们在用`docker run`命令启动容器时，需要用`-e`参数设置上一节介绍的环境变量，并用`-v`参数将创建的`/dev/shm/orionsock0`共享内存挂载到容器内的`/dev/shm`目录下。
 
-```bash
-git clone https://github.com/tensorflow/tensorflow.git
-```
-
-将TF的repo克隆到本地。我们在运行容器时也同时将TF的repo挂载到容器内部。
+为了方便运行Jupyter Notebook训练TensorFlow官方提供的`pix2pix`模型例子，我们假设用户已经将[pix2pix模型的Jupyter Notebook文件](https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/eager/python/examples/pix2pix/pix2pix_eager.ipynb)保存到执行`docker run`的目录下。
 
 ```bash
 docker run -it --rm \
     -v /dev/shm/orionsock0:/dev/shm/orionsock0:rw \
-    -v $(pwd)/tensorflow:/root/tensorflow \
+    -v $(pwd)/pix2pix_eager.ipynb:/root/pix2pix_eager.ipynb \
     --net host \
     -e ORION_CONTROLLER=127.0.0.1:9123 \
     -e ORION_VGPU=1 \
@@ -161,39 +157,40 @@ There are 4 vGPU under managered by Orion Controller. 4 vGPU are free now.
 
 ## **运行Jupyter Notebook**
 
-假定tensorflow文件夹已经被挂载进容器内部。
-
 ```bash
 # From inside Orion Client container
-cd tensorflow/tensorflow/contrib/eager/python/examples/
 jupyter notebook --no-browser --allow-root
 ```
 
-会看到如下的输出：
+会看到类似于下面的输出：
 
 ```bash
-To access the notebook, open this file in a browser:
-    file:///root/.local/share/jupyter/runtime/nbserver-26-open.html
-Or copy and paste one of these URLs:
-    http://localhost:8888/?token=<some-strange-token>
+[I 11:32:39.702 NotebookApp] Writing notebook server cookie secret to /root/.local/share/jupyter/runtime/notebook_cookie_secret
+[I 11:32:40.379 NotebookApp] Serving notebooks from local directory: /root
+[I 11:32:40.379 NotebookApp] The Jupyter Notebook is running at:
+[I 11:32:40.379 NotebookApp] http://localhost:8888/?token=<some-strange-token>
 ```
 
-如果用户可以使用这台机器的图形界面，那么可以打开浏览器，输入上述地址；
+如果用户可以使用这台机器的图形界面，那么可以打开浏览器，输入所提示地址。
 
-否则，可以在有图形界面（能打开浏览器）的本地上进行SSH端口转发：
+否则，可以在有图形界面（能打开浏览器）的本地节点（例如笔记本电脑）上进行SSH端口转发：
 
 ```bash
 ssh -Nf -L 8888:localhost:8888 <username@client-machine>
 ```
 
-然后在本地浏览器里面输入地址访问Jupyter Notebook
+然后在本地浏览器里面输入所提示地址访问Jupyter Notebook
 
 ![Jupyter](./figures/pix2pix/jupyter.png)
 
 
 ## **使用TensorFlow 1.12 Eager Execution模式进行 pix2pix 模型训练与推理**
 
-进入`pix2pix`目录，打开`pix2pix_eager.ipynb`，一路`shift+enter`执行每一个cell，就可以看到模型训练的情况：
+打开`pix2pix_eager.ipynb`，通过点击菜单栏下方的Run按钮，依次执行每一个Cell（每一次点击只会执行当前Cell）。其间会从Berkeley大学服务器上下载29MB的数据集[`facades.tar.gz`](https://people.eecs.berkeley.edu/~tinghuiz/projects/pix2pix/datasets/facades.tar.gz)。如果运行容器的节点上从海外服务器下载数据过慢，用户可能需要在别的节点下载数据集，下载完成后放置在容器运行节点上`pix2pix_eager.ipynb`所在目录下。
+
+![download-dataset](./figures/pix2pix/download.png)
+
+一步步执行下来，用户会最终开始训练过程：
 
 ![train-epoch-2](./figures/pix2pix/train-epoch-2.png)
 

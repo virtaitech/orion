@@ -229,7 +229,7 @@ https://github.com/tensorflow/models/blob/master/tutorials/image/cifar10_estimat
 
 ```bash
 # From inside VM
-git clone https://github.com/tensorflow/models
+git clone --branch=r1.12.0 https://github.com/tensorflow/models
 ```
 
 然后进入CIFAR10 Estimator文件夹内
