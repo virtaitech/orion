@@ -53,6 +53,8 @@ docker pull virtaitech/orion-client:tf1.12-py2
 
 我们同样从源码开始，使用默认编译选项编译了torchvision 0.3.0版本，打包进镜像。我们也安装了部分Python packages，使得用户可以直接在镜像里面运行PyTorch的官方examples：https://github.com/pytorch/examples
 
+我们在镜像中已经将[官方模型例子](https://github.com/pytorch/examples)克隆后放在`/root/examples`目录下，用户可以进入其中每个模型子目录运行模型。
+
 最后，我们通过通过`install-client`安装包安装了Orion Client运行时。
 
 我们在[PyTorch 1.10 Python3.5 镜像](./client-pytorch-1.1.0-py3)中介绍了我们编译PyTorch 1.1.0，TorchVision 0.3.0，以及安装Orion Client Runtime的步骤，用户可以参考。

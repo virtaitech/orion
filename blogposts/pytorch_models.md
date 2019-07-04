@@ -46,6 +46,8 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
 
 本节中，我们介绍Orion vGPU对官方模型例子的支持情况。
 
+我们在提供的`virtaitech/orion-client:pytorch-1.1.0-py3`镜像中已经将官方模型例子放在了`/root/examples`目录下，用户可以进入其中每个模型子目录运行模型。
+
 * [DCGAN](https://github.com/pytorch/examples/tree/master/dcgan) 支持单块Orion vGPU
   
     GitHub上页面建议使用的lsun bedroom数据集有42GB，下载较慢，用户可以选择[Celeb-A Faces dataset](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)，下载其中的`img_align_celeba.zip`。下载后，用户应创建目录`celeba`，然后将压缩包解压至目录下。此时，目录结构为
