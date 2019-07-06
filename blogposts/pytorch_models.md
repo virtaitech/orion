@@ -33,7 +33,7 @@ mkdir -p /usr/local/cuda-9.0
 ln -s /usr/local/cuda-9.0 /usr/local/cuda
 ```
 
-此外，用户可能需要
+此外，用户可能需要根据[PyTorch Dockerfile文档](../dockerfiles/client-pytorch-1.1.0-py3/README.md)中介绍的步骤，从源码编译一个依赖项更精简的PyTorch版本。
 
 ## 支持情况
 Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorch 1.0.1和1.1.0版本。
@@ -73,7 +73,7 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
   
     当用户设置`ORION_VGPU`值大于1时，PyTorch默认使用NCCL后端进行多卡训练，而Orion vGPU软件暂时不支持NCCL通信计算库。因此，如果用户只想用单Orion vGPU进行训练，应当在运行`main.py`时明确指定：
     ```bash
-    python3 main.py --arch resnet50 --batch-size 128 --data $IMAGENET_DIR --gpu 0
+    python3 main.py --arch resnet50 --batch-size 128 --gpu 0 $IMAGENET_DIR
     ```
 
     如果用户需要使用多Orion vGPU进行训练，应当指定使用Facebook [GLOO](https://github.com/facebookincubator/gloo)后端。以使用2块Orion vGPU为例：
@@ -81,12 +81,12 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     ```bash
     python3 main.py --arch resnet50 \
         --batch-size 256 \
-        --data $IMAGENET_DIR \
         --multiprocessing-distributed \
         --dist-backend gloo \
         --dist-url file:///tmp/sharedfile \
         --world-size 1 \
-        --rank 0
+        --rank 0 \
+        $IMAGENET_DIR
     ```
 
     上述命令中，
@@ -95,7 +95,9 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     * `--dist-backend gloo`表明使用GLOO作为多卡训练的通信计算后端
     * `--dist-url file:///tmp/sharedfile`指GLOO启动的每个工作进程之间初始化时用`/tmp/sharedfile`文件进行交互metadata。用户也可以选择TCP方式进行。
 
-    需要注意的是，启动容器时一定要带上[本文开头](#run-container)所介绍的参数
+    如果用户克隆的pytorch examples repo版本较旧，需要将`$IMAGENET_DIR`改为`--data $IMAGENET_DIR`。
+
+    **需要注意的是**，启动容器时一定要带上[本文开头](#run-container)所介绍的参数
     ```bash
     --ipc=host
     # (or) --shm-size=8G
@@ -151,13 +153,15 @@ cd examples/imagenet
 # (train with GLOO backend)
 python3 main.py --arch resnet50 \
     --batch-size 256 \
-    --data /root/imagenet_dir \
     --multiprocessing-distributed \
     --dist-backend gloo \
     --dist-url file:///tmp/sharedfile \
     --world-size 1 \
-    --rank 0
+    --rank 0 \
+    /root/imagenet_dir
 ```
+
+**注意：** 如果用户克隆下来的pytorch examples repo版本较旧，需要将上述命令最后的`/root/imagenet_dir`改为`--data /root/imagenet_dir`。
 
 总batch_size为256，每块Orion vGPU上batch_size为64。PyTorch识别出4块Orion vGPU设备，每块Orion vGPU上启动一个工作进程。
 
@@ -176,6 +180,9 @@ python3 main.py --arch resnet50 \
 可以看到，实际的计算任务被Orion Server进程`oriond`完全接管。
 
 用户或许会发现，`orion-smi`汇报的显存使用少于`nvidia-smi`汇报的实际物理显存使用，这是因为`orion-smi`工具目前只汇报堆上分配的显存，没有计入CUDA context、cuDNN等隐式占用的显存开销。
+
+**[2019-07-06]更新**  Orion vGPU软件增加了对显存使用控制的精确控制，将包括CUDA context在内的主要隐式显存分配纳入了控制范围，因此用户使用`orion-smi`工具看到的结果会非常接近于`nvidia-smi`。对于PyTorch模型训练，一般显存显示误差在20秒以内。
+
 
 经过7个epoch后，我们的训练达到49.362% top-1精度，75.680% top-5精度。
 

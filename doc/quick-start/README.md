@@ -80,6 +80,8 @@ EXAMPLES:
 
 # Orion  vGPU软件服务器端安装部署
 
+读者需要确保Orion Controller，Orion Server和Orion Client都是最新版本。不同版本的Orion vGPU组件无法共同工作。
+
 ## <a id="controller"></a> 步骤一：部署 Orion Controller
 
 ### 安装环境准备
@@ -262,7 +264,9 @@ INFO[1738] Adding new NVidia GPU to host 127.0.0.1 (GPU-d081d24f-816a-0324-1ada-
 
 # 典型使用场景
 
-下面，我们选取三个典型场景，展示在不同的环境下，如何运用Orion vGPU软件**无修改**地使用官方 TensorFlow 1.12 进行模型训练与推理。具体地，我们将展示以下例子：
+下面，我们选取三个典型场景，展示在不同的环境下，如何运用Orion vGPU软件**无修改**地使用官方 TensorFlow 1.12 进行模型训练与推理。
+
+具体地，我们将展示以下例子：
 
 ## [Docker容器中使用本地节点GPU资源](container.md)
 

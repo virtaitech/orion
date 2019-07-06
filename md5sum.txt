@@ -1,7 +1,8 @@
-74872f49042cf6570b821e1cba7c892e  ./oriond
+0e2bbe605cd3ed7e9bcc7ffbaabf86d4  ./install-client
 93eded304497cff77b4f3ef013108e16  ./install-server.sh
+dc35292baa214e1c213a69d6bfa3eda1  ./LICENSE
+5b2745b18ca619eebcce4c86d5258081  ./orion-check
+c5974ac53ff4b55e64e3023a26dd91d3  ./orion-controller
 69d642f58f3c793c885111188409792b  ./orion-shm
 93fd51ccba8a56c695d58ecb7a83c6e2  ./orion.conf.template
-c5974ac53ff4b55e64e3023a26dd91d3  ./orion-controller
-2a593887296675fd80a3a2d8fb190dcb  ./install-client
-5b2745b18ca619eebcce4c86d5258081  ./orion-check
+df1943b786aba119bf584863d912f95d  ./oriond

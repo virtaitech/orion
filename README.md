@@ -24,6 +24,18 @@ Orion vGPU软件用户手册
 * [TensorFlow 使用Orion vGPU软件加速模型训练与推理](./blogposts/tensorflow_models.md)
 * [PyTorch 使用Orion vGPU软件加速模型训练与推理](./blogposts/pytorch_models.md)
 
+# What's New
+
+* 2019/07/06 Orion vGPU软件更新：更加精确的显存控制
+
+  用户需要确保Orion Controller，Orion Server和Orion Client都是最新版本。不同版本的Orion vGPU组件无法共同工作。
+  
+  * `Orion Controller` 使用最新的`orion-controller`
+
+  * `Orion Server` 使用最新的安装包重新安装并启动
+  
+  * `Orion Client` 使用`docker pull`更新已有镜像，或者在裸机/KVM虚拟机上用最新的`install-client`重新安装。
+
 # Contact Us
 
 如果您在使用本产品的过程中遇到问题，欢迎在GitHub上提交issue，或者通过邮件联系我们：

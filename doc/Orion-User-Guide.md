@@ -351,6 +351,9 @@ Orion Client的配置文件名为 client.conf，可以放在两个位置。一�
 
 
 # 常见问题
+
+用户首先需要确认Orion Server和Orion Client都是**最新**版本。不同版本之间的Orion Server和Orion Client无法共同使用。
+
 * Orion Client端应用程序启动报告无法找到NVidia GPU
     * 此故障为应用程序没有使用Orion Client运行库导致，可能的原因有几种：
         * 该应用程序在编译期间静态链接了NVidia的库，导致其运行时并不调用Orion Client的运行库。该问题应该通过设置动态链接并重新编译解决。

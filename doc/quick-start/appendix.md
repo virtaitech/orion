@@ -148,6 +148,9 @@ There are 4 vGPU under managered by Orion Controller. 4 vGPU are free now.
 
 ### <a id="trouble-client"></a> Orion Client运行时检查
 
+用户首先需要确认Orion Server和Orion Client都是**最新**版本。不同版本之间的Orion Server和Orion Client无法共同使用。
+
+
 #### 常见故障原因
 
 当Orion Controller和Orion Server的状态正常后，用户在Orion Client里可能因为多种原因无法使用Orion vGPU服务：
@@ -231,7 +234,8 @@ Done
 
 * Orion Server启动时配置文件`/etc/orion/server.conf`里的`bind_addr`是否可以从Orion Client访问。如果地址没有问题，需要检查防火墙是否暴露9960-9961端口。
 * Orion Server模式是否正确？例如是否打开/关闭KVM模式。
-* 本地容器环境，使用共享内存加速通信，用户需要检查是否根据quick-start中[使用本地Docker容器](container.md)章节的内容创建并挂载`/dev/shm/orionsock<index>`文件。注意容器内的挂载地址需要和物理地址完全一样，即使用`-v /dev/shm/orionsock<index>:/dev/shm/orionsock<index>:rw`启动容器。
+* 本地容器环境，使用共享内存，用户需要检查是否根据quick-start中[使用本地Docker容器](container.md)章节的内容创建并挂载`/dev/shm/orionsock<index>`文件。注意容器内的挂载地址需要和物理地址完全一样，即使用`-v /dev/shm/orionsock<index>:/dev/shm/orionsock<index>:rw`启动容器。
+* 本地容器环境，使用共享内存，用`ls -lah /dev/shm`检查是否有类似于`orionsock0`的**目录**存在，导致`orion-shm`工具不能完成共享内存创建。
 
 对于本地容器使用共享内存，存在一些难以发现的问题。如果用户发现应用程序hang住，CPU占有率高，可以检查：
 * 是否共享内存文件在容器内外名字不一致？注意容器内的挂载地址需要和物理地址完全一样，即使用`-v /dev/shm/orionsock<index>:/dev/shm/orionsock<index>:rw`启动容器。

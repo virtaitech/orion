@@ -14,6 +14,7 @@
 </div>
 
 进入后续步骤之前，我们假设：
+* Orion Server和Orion Client均为最新版本
 * Orion Server已经根据[Orion Server安装部署](README.md#server)小节成功安装
 * Orion Controller已经根据[Orion Controller安装部署](README.md#controller)小节安装并正常启动
 
@@ -83,11 +84,12 @@ There are 4 vGPU under managered by Orion Controller. 4 vGPU are free now.
 正常情况下，每块物理GPU会被虚拟化为4块Orion vGPU，它们都应该处于可用的状态。
 
 
-## **创建用于通信的共享内存**
+## **为Orion Client创建用于通信的共享内存**
 
-为了Orion Server和容器中的Client应用能够通过共享内存加速数据传输，我们需要在启动容器之前创建一块共享内存，在后续`docker run`时通过`-v`参数挂载到容器中。
+为了Orion Server和容器中的Client应用能够通过共享内存加速数据传输，我们需要在启动容器之前创建一块共享内存:
 
 ```bash
+# From host OS
 orion-shm
 ```
 
@@ -98,6 +100,8 @@ orion-shm
 * 如果删除或覆盖了已经被使用过的`/dev/shm/orionsock<id_num>` 共享内存，一定要重启Orion Server服务；
 
 * 如果同时运行多个container，每个container需要挂载单独的`/dev/shm/orionsock<id_num>`共享内存。这些共享内存可以通过`orion-shm -i <id_num>`来分别创建。
+
+**注** 如果用户阅读本文档时首先略过了这一步，直接执行了下面的`docker run`命令，那么`/dev/shm`下会创建一个`/dev/shm/orionsock0`的**目录**，导致这里`orion-shm`不能成功创建共享内存文件。这种情况下，用户需要手动删除这个同名目录。
 
 ## **Orion Client容器启动**
 
@@ -111,6 +115,8 @@ docker pull virtaitech/orion-client:tf1.12-py3
 
 有兴趣的读者可以参考我们的[Dockerfile](#)来构建自己的容器。
 
+**注** 读者需要确保Docker镜像和Orion Server都是最新版本，不同版本之间的Orion Server和Orion Client无法共同工作。
+
 ### Orion Client端参数配置
 
 对于Orion Client端容器来说，需要设置以下环境变量：
@@ -120,9 +126,13 @@ docker pull virtaitech/orion-client:tf1.12-py3
 
 ### 启动容器
 
+**我们假设用户已经成功创建`/dev/shm/orionsock0`共享内存**
+
 如上文所述，我们在用`docker run`命令启动容器时，需要用`-e`参数设置上一节介绍的环境变量，并用`-v`参数将创建的`/dev/shm/orionsock0`共享内存挂载到容器内的`/dev/shm`目录下。
 
 为了方便运行Jupyter Notebook训练TensorFlow官方提供的`pix2pix`模型例子，我们假设用户已经将[pix2pix模型的Jupyter Notebook文件](https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/eager/python/examples/pix2pix/pix2pix_eager.ipynb)保存到执行`docker run`的目录下。
+
+**注意** 直接用`wget <url/to/pix2pix_eager.ipynb>`命令所下载到的并不是真正的Jupyter Notebook文件，而是一个html文件。用户可能需要将整个TensorFlow repo下载到本地，再将`pix2pix_eager.ipynb`放到工作目录下。
 
 ```bash
 docker run -it --rm \
@@ -159,16 +169,23 @@ There are 4 vGPU under managered by Orion Controller. 4 vGPU are free now.
 
 ```bash
 # From inside Orion Client container
-jupyter notebook --no-browser --allow-root
+jupyter notebook --ip=0.0.0.0 --no-browser --allow-root
 ```
 
 会看到类似于下面的输出：
 
 ```bash
-[I 11:32:39.702 NotebookApp] Writing notebook server cookie secret to /root/.local/share/jupyter/runtime/notebook_cookie_secret
-[I 11:32:40.379 NotebookApp] Serving notebooks from local directory: /root
-[I 11:32:40.379 NotebookApp] The Jupyter Notebook is running at:
-[I 11:32:40.379 NotebookApp] http://localhost:8888/?token=<some-strange-token>
+[I 10:14:05.850 NotebookApp] Writing notebook server cookie secret to /root/.local/share/jupyter/runtime/notebook_cookie_secret
+[I 10:14:06.545 NotebookApp] Serving notebooks from local directory: /root
+[I 10:14:06.545 NotebookApp] The Jupyter Notebook is running at:
+[I 10:14:06.545 NotebookApp] http://(hostname or 127.0.0.1):8888/?token=58a67eb5acdf176290cd9649f800a25d68d87637b229baf3
+[I 10:14:06.545 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 10:14:06.548 NotebookApp]
+
+    To access the notebook, open this file in a browser:
+        file:///root/.local/share/jupyter/runtime/nbserver-16-open.html
+    Or copy and paste one of these URLs:
+        http://(hostname or 127.0.0.1):8888/?token=<some-random-token>
 ```
 
 如果用户可以使用这台机器的图形界面，那么可以打开浏览器，输入所提示地址。
@@ -179,7 +196,7 @@ jupyter notebook --no-browser --allow-root
 ssh -Nf -L 8888:localhost:8888 <username@client-machine>
 ```
 
-然后在本地浏览器里面输入所提示地址访问Jupyter Notebook
+然后在本地浏览器里面输入`localhost:8888/?token=<some-random-token>`地址（将`<some-random-token>`替换成Jupyter Notebook所输出的实际token）访问Jupyter Notebook。
 
 ![Jupyter](./figures/pix2pix/jupyter.png)
 
@@ -259,7 +276,7 @@ systemctl restart oriond
 ```bash
 docker run -it --rm \
     -v /dev/shm/orionsock0:/dev/shm/orionsock0:rw \
-    -v $(pwd)/tensorflow:/root/tensorflow \
+    -v $(pwd)/pix2pix_eager.ipynb:/root/pix2pix_eager.ipynb \
     -p 8888:8888 \
     -e ORION_CONTROLLER=172.17.0.1:9123 \
     -e ORION_VGPU=1 \
@@ -286,20 +303,3 @@ There are 4 vGPU under managered by Orion Controller. 4 vGPU are free now.
 这样的输出说明Orion Client容器内部应用可以向Orion Controller申请资源。否则，用户应该先根据[Orion Controller安装部署](README.md#controller)章节检查Orion Controller的状态，再根据上文检查是否设置了正确的`ORION_CONTROLLER=<controller_ip>:9123`。
 
 注：在使用独立Docker子网时，可能会遇到防火墙相关问题，读者可以参考附录[防火墙设置](appendix.md#firewall)小节的内容进行检查和设置。
-
-## **运行Jupyter Notebook**
-
-假定tensorflow文件夹已经被挂载进容器内部。此时，我们运行Juypter Notebook时要显式指定`--ip=0.0.0.0`，
-
-```bash
-cd tensorflow/tensorflow/contrib/eager/python/examples/
-jupyter notebook --ip=0.0.0.0 --no-browser --allow-root
-```
-
-然后再在有图形界面的节点（例如Laptop）上通过SSH端口转发，
-
-```bash
-ssh -Nf -L 8888:localhost:8888 <username@client-machine>
-```
-
-从而最终可以在浏览器中通过`localhost:8888/?token=<some-weird-token>`访问Jupyter Notebook。
