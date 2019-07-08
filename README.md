@@ -26,9 +26,15 @@ Orion vGPU软件用户手册
 
 # What's New
 
-* 2019/07/06 Orion vGPU软件更新：更加精确的显存控制
+* **2019/07/08** Docker 镜像更新：[PyTorch 1.0.1](./dockerfiles/client-pytorch-1.0.1-py3)，[TensorFlow 1.8.0](./dockerfiles/client-tf1.8-base)
 
-  用户需要确保Orion Controller，Orion Server和Orion Client都是最新版本。不同版本的Orion vGPU组件无法共同工作。
+  PyTorch 1.0.1镜像中，PyTorch 1.0.1和torchvision 0.2.2均由官方wheels安装，无须从源码编译。
+  
+  用户使用最新镜像之前，需要确保Orion Server已经更新至最新版本。
+
+* **2019/07/06** Orion vGPU软件更新：更加精确的显存控制
+
+  用户需要确保Orion Controller，Orion Server和Orion Client更新至最新版本。不同版本的Orion vGPU组件无法共同工作。
   
   * `Orion Controller` 使用最新的`orion-controller`
 

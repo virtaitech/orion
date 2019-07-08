@@ -11,7 +11,7 @@
 
 如果要构建镜像，用户需要按照下面的步骤从源码编译PyTorch和TorchVision。
 
-## 从源码编译PyTorch 1.1.0的Python 3.5版本
+## 从源码编译PyTorch 1.1.0
 
 我们以Ubuntu 16.04环境为例。
 

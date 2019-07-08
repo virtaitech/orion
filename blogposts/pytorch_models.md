@@ -5,38 +5,34 @@
 我们推荐用户在我们准备的Orion Client容器内部运行PyTorch模型
 
 ```bash
-docker pull virtaitech/orion-client:pytorch-1.1.0-py3
+docker pull virtaitech/orion-client:pytorch-1.0.1-py3
+# (or use pytorch 1.1.0)
+# docker pull virtaitech/orion-client:pytorch-1.1.0-py3
 ```
 
 运行容器之前，用户需要保证Orion Controller和Orion Server正常运行。运行容器时，需要将`orion-shm`工具创建的`/dev/shm/orionsock<index>`挂载进容器内的同一路径。用户还需要设置正确的`ORION_CONTROLLER`环境变量。
 
-<a id="run-container"></a>**容器内使用PyTorch Multiprocessing**
+<a id="run-container"></a>**容器内使用**
 
-为了在容器中使用PyTorch的Multiprocessing模块，包括PyTorch DataLoader，用户需要增大容器所能使用的共享内存最大值。为此，`docker run`时需要加上
+如果用户需要在容器中使用PyTorch Multiprocessing模块（例如通过DataLoader多进程加载Imagenet数据集），用户需要增大容器内用于IPC的共享内存限额。为此，`docker run`时需要加上参数
 
 ```bash
 --ipc=host
+# (or specify max shm size)
+# --shm-size=8G
 ```
-或者
-```bash
---shm-size=8G
-```
-参数。这一要求与Orion vGPU软件无关，即使通过`nvidia-docker`使用本地物理GPU也是需要的。关于这一点，用户可以参见[NVIDIA官方PyTorch镜像说明](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html)。
+
+
+这一要求与Orion vGPU软件无关，即使通过`nvidia-docker`使用本地物理GPU也是需要的。关于这一点，用户可以参见[NVIDIA官方PyTorch镜像说明](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html)。
 
 **在KVM虚拟机或者裸物理机运行PyTorch使用Orion vGPU**
 
-如果用户要在非容器环境中安装PyTorch以及Orion Client Runtime以使用Orion vGPU资源，建议用户将Orion Client运行时安装到`/usr/local/cuda-9.0`，并创建软链接`/usr/local/cuda => /usr/local/cuda-9.0`:
+* 对于PyTorch 1.0.x 版本，用户运行`install-client`安装包安装Orion Client Runtime后即可支持。PyTorch可以直接从
 
-```bash
-mkdir -p /usr/local/cuda-9.0
-./install-client -d /usr/local/cuda-9.0
-ln -s /usr/local/cuda-9.0 /usr/local/cuda
-```
-
-此外，用户可能需要根据[PyTorch Dockerfile文档](../dockerfiles/client-pytorch-1.1.0-py3/README.md)中介绍的步骤，从源码编译一个依赖项更精简的PyTorch版本。
+* 对于PyTorch 1.1.0 版本，我们目前要求用户从源码编译，以去掉部分组件依赖。用户可以参考根据[PyTorch 1.1.0 镜像文档](../dockerfiles/client-pytorch-1.1.0-py3/README.md)中介绍的步骤、编译参数，从源码编译一个依赖项更精简的PyTorch 1.1.0版本。
 
 ## 支持情况
-Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorch 1.0.1和1.1.0版本。
+Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorch 1.0.x和1.1.0版本。
 
 需要注意的是
 * Orion vGPU目前不支持PyTorch通过RDMA网络使用远程GPU资源
@@ -60,7 +56,7 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
                 ...
     ```
 
-    用户可以用`--dataset lfw --dataroot=path/to/celeba`参数使用解压后的数据集进行训练。由于我们目前只支持单块Orion vGPU，用户需要加上`--ngpu 1`参数：
+    用户可以用`--dataset lfw --dataroot=path/to/celeba`参数使用解压后的数据集进行训练。由于我们暂时不能完全支持NCCL通信库，用户需要加上`--ngpu 1`参数指定使用一块Orion vGPU进行训练：
     ```bash
     python3 main.py --dataset lfw --dataroot /path/to/celeba --cuda --ngpu 1
     ```
@@ -105,20 +101,85 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     以保证容器内部的DataLoader Worker进程之间可以通过共享内存交换数据。
 
 * [MNIST Convnets](https://github.com/pytorch/examples/tree/master/mnist) 支持
+
+    ```bash
+    python3 main.py
+    ```
+
+    默认会训练10个epochs。
+
 * [MNIST Hogwild](https://github.com/pytorch/examples/tree/master/mnist_hogwild) 暂不支持，对CUDA IPC的全面支持还在开发阶段。
 * [Linear Regression](https://github.com/pytorch/examples/tree/master/regression) 支持
+
+    ```bash
+    python3 main.py
+    ```
+
 * [Reinforcement Learning](https://github.com/pytorch/examples/tree/master/reinforcement_learning) 支持
+
+    ```bash
+    pip3 install -r requirements.txt
+    # For REINFORCE:
+    python3 reinforce.py
+    # For actor critic:
+    python3 actor_critic.py
+    ```
+
 * [SNLI with GloVe vectors and LSTMs](https://github.com/pytorch/examples/tree/master/snli) 支持
 
-    用户需要安装`spacy`，并下载语料集：
+    用户需要安装torchtext和spacy，并下载spacy模型：
+    此外，用户需要安装`spacy`，
     ```bash
-    pip3 install spacy
+    pip3 install torchtext spacy
+
     python3 -m spacy download en
     ```
-* [Super Resolution](https://github.com/pytorch/examples/tree/master/super_resolution) 提供的容器内不支持，因为编译时没有带上Lapack支持。
+
+    然后运行模型：
+
+    ```bash
+    python3 main.py
+    ```
+
+* [Super Resolution](https://github.com/pytorch/examples/tree/master/super_resolution) ~~提供的容器内不支持~~提供的PyTorch 1.1.0镜像不支持，因为编译PyTorch时没有带上Lapack支持。
+
+    **Update 2019/07/08** 用户可以在我们提供的PyTorch 1.0.1镜像中运行这个例子：
+
+    ```bash
+    # Train 100 epochs
+    python3 main.py --upscale_factor 3 --batchSize 4 --testBatchSize 100 --nEpochs 100 --lr 0.001
+
+    # Super Resolution
+    python3 super_resolve.py --input_image dataset/BSDS300/images/test/16077.jpg --model model_epoch_500.pth --output_filename out.png
+    ```
+
+    生成的图片为`out.png`，用户可以与输入图片`dataset/BSDS300/images/test/16077.jpg`对比效果。
+
 * [Time Sequence Prediction](https://github.com/pytorch/examples/tree/master/time_sequence_prediction) 支持
+
+    ```bash
+    # Generate input data
+    python3 generate_sine_wave.py
+    # Train
+    python3 train.py
+    ```
+
+    训练结束后会在当前目录生成预测的波形图。
+
 * [Variational Auto-Encoders](https://github.com/pytorch/examples/tree/master/vae) 支持
+
+    ```bash
+    python3 main.py
+    ```
+
 * [Word Language Model using LSTM](https://github.com/pytorch/examples/tree/master/word_language_model) 支持
+
+    ```bash
+    # Train a tied LSTM on Wikitext-2 with CUDA
+    python3 main.py --cuda --epochs 6 --tied
+    # Generate samples from the trained LSTM model.
+    python3 generate.py
+    ```
 
 ## 多卡训练Resnet50模型示例
 
@@ -179,9 +240,9 @@ python3 main.py --arch resnet50 \
 
 可以看到，实际的计算任务被Orion Server进程`oriond`完全接管。
 
-用户或许会发现，`orion-smi`汇报的显存使用少于`nvidia-smi`汇报的实际物理显存使用，这是因为`orion-smi`工具目前只汇报堆上分配的显存，没有计入CUDA context、cuDNN等隐式占用的显存开销。
+~~用户或许会发现，`orion-smi`汇报的显存使用少于`nvidia-smi`汇报的实际物理显存使用，这是因为`orion-smi`工具目前只汇报堆上分配的显存，没有计入CUDA context、cuDNN等隐式占用的显存开销。~~
 
-**[2019-07-06]更新**  Orion vGPU软件增加了对显存使用控制的精确控制，将包括CUDA context在内的主要隐式显存分配纳入了控制范围，因此用户使用`orion-smi`工具看到的结果会非常接近于`nvidia-smi`。对于PyTorch模型训练，一般显存显示误差在20秒以内。
+**Update 2019/07/06**  Orion vGPU软件增加了对显存使用控制的精确控制，将包括CUDA context在内的主要隐式显存分配纳入了控制范围，因此用户使用`orion-smi`工具看到的结果会非常接近于`nvidia-smi`。对于PyTorch模型训练，一般显存显示误差在20MB以内。
 
 
 经过7个epoch后，我们的训练达到49.362% top-1精度，75.680% top-5精度。
