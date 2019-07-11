@@ -278,42 +278,6 @@ function find_mps_support {
 }
 
 
-etcd_running=0
-etcd_version=
-etcd_v2=0
-etcd_v3=0
-summary_etcd_support="No"
-function find_etcd {
-    echo -e "\nSeaching etcd service ..."
-    bin=
-    running_bin=$(ps -aux | grep -v grep | grep -w etcd | awk '{print $11}')
-    if [ -z "$running_bin" ]; then
-        if which etcd > /dev/null 2>&1; then
-            bin=$(which etcd)
-        fi
-    else
-        bin=$running_bin
-        etcd_running=1
-        summary_etcd_support="Yes"
-    fi
-
-    if [ -z "$bin" ]; then
-        echo "No etcd is running or installed in the system."
-        return 1
-    fi
-
-    etcd_version=$($bin --version | grep "etcd Version" | awk '{print $3}')
-    echo "etcd (version $etcd_version) is installed in $bin"
-
-    major=${etcd_version:0:1}
-    if [ $major -eq 2 ]; then
-        etcd_v2=1
-    elif [ $major -eq 3 ]; then
-        etcd_v3=1
-    fi
-}
-
-
 qemu_api_version=
 qemu_version=
 qemu_version_major=
@@ -775,7 +739,6 @@ if [ "$1" == "install" ]; then
         find_cudnn
         find_nvidia_gpu
         find_mps_support
-        find_etcd
         find_qemu_kvm
         find_docker
         check_server_install
@@ -788,7 +751,6 @@ if [ "$1" == "install" ]; then
         printf "%-40s [%s]\n" "CUDNN :" "$summary_cudnn_support"
         printf "%-40s [%s]\n" "NVIDIA GPU :" "$summary_nvidia_gpu_support"
         printf "%-40s [%s]\n" "NVIDIA CUDA MPS :" "$summary_nvidia_mps"
-        printf "%-40s [%s]\n" "etcd service :" "$summary_etcd_support"
         printf "%-40s [%s]\n" "QEMU-KVM environment :" "$summary_qemu_kvm_support"
         printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
         printf "%-40s [%s]\n" "Orion Server binary:" "$summary_server_support"
@@ -828,16 +790,10 @@ if [ "$1" == "install" ]; then
         printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
     elif [ "$2" == "controller" ]; then
         check_os
-        find_etcd
 
         echo -e "\n==============================================="
         echo -e "Installation summaries :\n"
         printf "%-40s [%s]\n" "OS :" "$summary_os_support"
-        printf "%-40s [%s]\n" "etcd service :" "$summary_etcd_support"
-
-        if [ $summary_etcd_support == "No" ]; then
-            echo -e "\n\033[31mOrion Controller can not be installed in this environment.\033[0m"
-        fi
     else
         echo "Invalid parameters."
         print_help

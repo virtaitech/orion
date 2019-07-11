@@ -92,7 +92,6 @@ Orion Client端可以部署在本地物理机上，Container里，或者VM里，
 ## 部署Orion Controller
 ### 环境依赖
 * Linux Centos 7.x 或者 Ubuntu 14.04 及以上版本
-* etcd服务
 
 ### 启动Orion Controller服务
 
@@ -106,7 +105,6 @@ Orion Controller通过启动参数支持不同的配置选项。orion-controller
 
     -i          绑定服务于指定IP地址。默认值为 "0.0.0.0"
     -p          服务监听端口。默认值为 9123
-    --kv        指定etcd的key-value存储后端地址。默认值为 "http://127.0.0.1:2379"
     --log-level 日志的级别。支持 [debug|info|warn|error] 四种级别。默认值为 "info"
     --log       日志文件的输出路径。默认为输出到标准输出
     --vgpu      每个物理GPU切分为多少个vGPU。默认值为 4。允许的合法范围为大于等于1的自然数
@@ -373,7 +371,6 @@ Orion Client的配置文件名为 client.conf，可以放在两个位置。一�
         * 确认是否的确由于正在运行的Orion Client过多从而导致资源耗尽。
         * 是否由于连续串行执行多次Orion Client应用程序，系统需要一定时间间隙完成全局资源的释放。
         * 是否没有成功启动 Orion Server服务。
-        * Orion Controller的环境中没有安装并启动Linux etcd服务。
     * 如果剩余vGPU资源不为0
         * 确认Orion Clinet环境中的 ORION_VGPU 和 ORION_GMEM 请求的资源确实超出了实际可分配的能力，以下资源请求无法得到满足
             * ORION_GMEM 配置使用的 GPU 显存超出了单个物理 GPU 的显存大小。

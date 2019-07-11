@@ -84,29 +84,6 @@ EXAMPLES:
 
 ## <a id="controller"></a> 步骤一：部署 Orion Controller
 
-### 安装环境准备
-环境依赖项
-
-* etcd
-
-如果操作系统中尚未安装`etcd`，可以通过以下命令安装并启动：
-
-```bash
-# Ubuntu 16.04
-sudo apt install -y etcd
-
-# CentOS 7.x
-sudo yum install -y etcd.x86_64
-sudo systemctl start etcd
-```
-
-可以通过`systemctl`确认`etcd`服务正常运行：
-
-```bash
-systemctl status etcd
-```
-
-正常运行时，屏幕上会出现`active (running)`的彩色文字。
 ### 启动 Orion Controller
 
 在集群上部署Orion vGPU软件时，Orion Controller可以运行在任意节点上。本文为方便起见，将Orion Controller和Orion Server服务部署在同一台含有GPU的节点上。
@@ -117,13 +94,18 @@ systemctl status etcd
 ./orion-controller start
 ```
 
-正常情况下，屏幕会输出如下的日志，表明Orion Controller连接上`etcd`服务，并监听来自网络所有地址的Orion vGPU资源请求。
+正常情况下，屏幕会输出如下的日志，监听来自网络所有地址的Orion vGPU资源请求。
 
 ```bash
-INFO[0000] Creating database connection to http://127.0.0.1:2379 
-INFO[0000] Database connection is created.              
+ERRO[0000] Config File "controller" Not Found in "[/etc/orion]"
+ERRO[0000] read config file error, enable default config
+WARN[0000] use database default config
+INFO[0000] Etcd Server is ready!
+INFO[0000] Creating database connection to http://127.0.0.1:23790
+INFO[0000] Database connection is created.
 INFO[0000] Controller is launching, listening on 0.0.0.0:9123
 ```
+上述日志的前两个error信息仅仅表明系统没有配置文件，则Orion Controller会使用默认值进行配置。用户可以忽略该项错误日志。
 
 ### （可选）后台运行Orion Controller并输出日志到文件
 下述命令将Orion Controller进程运行在后台，并将日志输出到工作目录下的`controller.log`文件。用户可以用`cat`等命令查看日志内容。

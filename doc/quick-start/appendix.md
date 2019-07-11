@@ -65,7 +65,7 @@ systemctl start firewalld
 
     ./orion-check install all
 
-为使本地Orion vGPU软件正常工作，至少需要满足基本项`OS`, `CUDA`, `CUDNN`, `NVIDIA GPU`, `etcd service`的状态为`Yes`。
+为使本地Orion vGPU软件正常工作，至少需要满足基本项`OS`, `CUDA`, `CUDNN`, `NVIDIA GPU`的状态为`Yes`。
 
 除了 Volta 和 Turing架构的显卡（例如 V100, 2080Ti）之外，在使用其余显卡时，一定要确保`CUDA MPS`处于关闭状态。
 
@@ -81,7 +81,6 @@ CUDA :                                   [Yes]
 CUDNN :                                  [Yes]
 NVIDIA GPU :                             [Yes]
 NVIDIA CUDA MPS :                        [OFF]
-etcd service :                           [Yes]
 QEMU-KVM environment :                   [No]
 Docker container environment :           [Yes]
 Orion Server binary:                     [Yes]
