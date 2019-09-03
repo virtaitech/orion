@@ -1,0 +1,8 @@
+pillow
+scipy==1.2.0
+matplotlib==3.0
+pandas
+cython
+tqdm
+contextlib2
+lxml

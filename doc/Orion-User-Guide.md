@@ -24,10 +24,13 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 
 ## NVidia CUDA
 * CUDA 9.0
+* CUDA 9.1
+* CUDA 9.2
+* CUDA 10.0
 * CUDNN 7.2 以上
 
 ## 深度学习框架
-* TensorFlow 1.8 至 1.12
+* TensorFlow 1.8 至 1.13
 * Pytorch 1.0.1，Pytorch 1.1
 
 ## 网络
@@ -50,7 +53,7 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 * 不支持NCCL库，不支持OpenGL相关接口，不支持图形渲染相关接口
 * 在使用Mellanox网卡的RDMA模式时，不支持Pytorch框架
 * 有限支持CUDA IPC，对部分程序可能不支持。
-* 由于Pytorch使用部分当前版本未支持的CUDA库，需要从源码重新编译社区版的Pytorch。
+* 需要从源码重新编译社区版的PyTorch 以保证动态链接 CUDA 库。
 
 # 组件介绍
 
@@ -95,9 +98,9 @@ Orion Client端可以部署在本地物理机上，Container里，或者VM里，
 
 ### 启动Orion Controller服务
 
-把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.0.1 为例。通过以下的命令可以启动Orion Controller服务。
+把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.1.1 为例。通过以下的命令可以启动Orion Controller服务。
 ```
-/root/Orion-1.0.1/orion-controller start
+/root/Orion-1.1.1/orion-controller start
 ```
 
 ### 配置Orion Controller服务
@@ -112,7 +115,7 @@ Orion Controller通过启动参数支持不同的配置选项。orion-controller
 ## 部署Orion Server
 
 ### 环境依赖
-* NVIDIA CUDA 9.0
+* NVIDIA CUDA 9.0, 9.1, 9.2, 10.0
 * NVIDIA CUDNN 7.2以上版本
 * g++ 4.8或以上版本，libcurl，openssl
 
@@ -122,11 +125,10 @@ Orion Controller通过启动参数支持不同的配置选项。orion-controller
 * 本地虚拟机支持：libvirt >= 1.3，QEMU >= 2.0
 
 ### 软件安装
-把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.0.1 为例。通过以下的命令安装Orion Server服务。
+把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.1.1 为例。通过以下的命令安装Orion Server服务。
 ```
-sudo CUDA_HOME=/usr/local/cuda /root/Orion-1.0.1/install-server.sh
+sudo /root/Orion-1.1.1/orion-server/install-server.sh
 ```
-其中CUDA_HOME变量应该设置为目标环境下正确的CUDA 9.0安装路径。
 
 ### 配置Orion Server
 大部分配置均可使用默认配置，少量配置需要根据使用场景进行编辑配置   
@@ -147,6 +149,9 @@ sudo CUDA_HOME=/usr/local/cuda /root/Orion-1.0.1/install-server.sh
 * enable_kvm：支持QEMU-KVM的VM
     * 对于上述本地GPU虚拟化方案，如果目标应用程序运行在QEMU-KVM的VM里，则设置为true，否则为false
     * 对于上述的分布式GPU资源池化方案，设置为false
+* vgpu_count：每个物理GPU切片为多少个vGPU
+    * 该参数合法的取值是1~100的任意整数
+    * 该参数会影响到默认每个vGPU的显存大小
 
 如需在安装之后改变CUDA的安装路径设置，则需要编辑文件 /etc/systemd/system/oriond.service。把其中的LD_LIBRARY_PATH变量和PATH变量的路径更改。更改后用如下命令重载配置
 ```
@@ -181,9 +186,10 @@ Orion Server的日志分为系统日志和用户日志两类
 * RDMA支持：MLNX_OFED_LINUX-4.5驱动及用户库
 
 ### 软件安装
-把Orion安装包内的install-client拷贝至目标环境，并以Root权限运行。以存放路径为/root/install-client 为例
-```
-sudo /root/install-client
+把Orion安装包内的`install-client-x.y` (根据所需CUDA版本选择对应的installer，例如`install-client-10.0`支持CUDA 10.0 )拷贝至目标环境，并以Root权限运行。
+
+``` bash
+sudo ./install-client-x.y
 ```
 上述命令把Orion Client环境安装至默认路径 /usr/lib 中。可以通过其他安装选项进行安装
 
@@ -208,8 +214,8 @@ Orion Client的配置中分为静态配置部分和动态配置部分。
 静态配置参数可以通过上述三类方法进行参数配置，而动态配置部分仅能通过环境变量进行参数配置   
 静态配置大部分可以使用默认值，少量配置需要修改。包括：
 
-* 环境变量 ORION_OCNTROLLER 设置 Orion Controller 的地址
-    * 例如通过 export ORION_OCNTROLLER=127.0.0.1:9123 指向一个监听在本地9123端口的 Orion Controller
+* 环境变量 ORION_CONTROLLER 设置 Orion Controller 的地址
+    * 例如通过 export ORION_CONTROLLER=127.0.0.1:9123 指向一个监听在本地9123端口的 Orion Controller
 * 配置文件参数 shm_path_base 指定内存文件系统的路径
     * 在本地GPU虚拟化方案中，如果目标环境是Container环境，且Orion Server开启了enable_shm支持，则在Orion Client环境中需要指定该路径。
 * 配置文件参数 controller_addr 指定 Orion Controller 的地址
@@ -280,19 +286,19 @@ Orion vGPU软件提供了健康检查的工具 orion-check 来帮助用户在各
 
 ## 在安装部署之前检查环境兼容性
 
-把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.0.1 为例。
+把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.1.1 为例。
 
 * 检查安装Orion Controller的环境
 ```
-    sudo /root/Orion-1.0.1/orion-check install controller
+    sudo /root/Orion-1.1.1/orion-check install controller
 ```
 * 检查安装Orion Server的环境
 ```
-    sudo /root/Orion-1.0.1/orion-check install server
+    sudo /root/Orion-1.1.1/orion-check install server
 ```
 * 检查安装Orion Client的环境
 ```
-    sudo /root/Orion-1.0.1/orion-check install client
+    sudo /root/Orion-1.1.1/orion-check install client
 ```
 
 ## 在安装部署之后检查运行时的健康状况
@@ -313,6 +319,7 @@ Orion vGPU软件提供了健康检查的工具 orion-check 来帮助用户在各
 * bind_addr ：当本机有多个网络地址的时候，通过该参数指定Orion Server绑定地址。默认值为 127.0.0.1
 * enable_shm ：是否启用SHM加速通讯。仅仅在Orion Server和Orion Client部署在同一个物理机的时候可以启用。默认值为 true
 * enable_kvm ：是否支持Orion Client部署在VM里面且使用SHM加速。仅仅在Orion Server和Orion Client部署在同一个物理机的时候可以启用。默认值为 false
+* vgpu_count：每个物理GPU切片为多少个vGPU。取值范围是1~100的任意整数。默认值为 4
 
 ### [server-log] 配置
 * log_with_time ：记录log的时候带时间戳。0表示否，1表示是。

@@ -85,7 +85,7 @@ Orion vGPU软件对TensorFlow官方教程中的例子提供全面的支持。下
 值得注意的是，此repo中的模型代码均基于Python 2.7环境，因此建议用户使用Python 2.7版本的镜像：
 
 ```bash
-git pull virtaitech/orion-client:tf1.12-py2
+git pull virtaitech/orion-client:cu9.0-tf1.12-py2
 ```
 
 或者在KVM虚拟机、裸物理机上配置好Python 2.7环境，然后安装TensorFlow 1.12 GPU版本，

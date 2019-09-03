@@ -11,6 +11,8 @@
 
 更多的主题，例如如何调整物理GPU划分成Orion vGPU的粒度，如何使用PyTorch框架，以及如何通过Kubernetes调度Orion vGPU资源等，请参见我们的[用户手册](../Orion-User-Guide.md)以及[技术博客](../../README.md#tech-blog)。
 
+**2019/09/03 更新：** 现在Orion vGPU软件可以同时支持多个CUDA版本。对于 Orion Server 来说，只需要将不同 CUDA SDK 均放在`/usr/local`下，例如`/usr/local/cuda-10.0`, `/usr/local/cuda-9.0`，Orion Server可以动态支持各版本；对于 Orion Controller 来说，需要根据应用对CUDA版本的需求，使用对应的Orion Client Runtime。本文档以 CUDA 9.0 为例。
+
 # Orion  vGPU软件架构
 
 ![Architecture Overview](./figures/arch-local.png)
@@ -29,54 +31,6 @@
 该组件为一个长运行的系统服务，负责GPU资源化的后端服务。Orion Server部署在每一个物理GPU服务器上，接管本机内的所有物理GPU。Orion Server通过和Orion Controller的交互把本机的GPU加入到由Orion Controller管理维护的GPU资源池当中。 
 
 当Orion Client端应用程序运行时，通过Orion Controller的资源调度，建立和Orion Server的连接。Orion Server为其应用程序的所有CUDA调用提供一个隔离的运行环境以及真实GPU硬件算力。
-
-
-# Orion 安装包介绍
-## **目录结构**
-[下载得到](../..)的安装包内容如下：
-
-```bash
-blogposts  doc  dockerfiles  install-client  install-server.sh  LICENSE  md5sum.txt  orion-check  orion.conf.template  orion-controller  oriond  orion-shm  README.md
-```
-
-下文中，若非明确说明，假设读者命令行的工作目录即为安装包目录。
-
-## **主要组件**
-* orion-check： 检查系统兼容性与依赖项，以及Orion平台运行时健康状态的工具
-* install-client： Orion Client安装包
-* install-server.h, oriond： Orion Server安装套件
-* orion-controller：Orion Controller可执行文件
-* orion-shm：创建通讯用共享内存的工具
-
-
-## **系统环境检查工具**
-
-直接运行`orion-check`工具，屏幕上会输出命令接受的参数
-
-```bash
-# (omit output)
-COMMANDS:
-    install
-        server      Check health for installing Orion Server
-        client      Check health for installing Orion Client
-        controller  Check health for installing Orion Controller
-        all         Check health for installing all Orion components
-
-    runtime
-        server      Diagnose the status for Orion Server running
-        client      Diagnose the status for Orion Client running
-
-EXAMPLES:
-    orion-check install server
-    orion-check install client
-    orion-check runtime server
-```
-
-`orion-check`工具有两大用途：
-* 安装Orion平台之前检查系统环境依赖: `orion-check install all`
-* Orion平台运行中诊断各组件的健康状态：`orion-check runtime server/client`
-  
-后续文档中，我们会逐步展示 `orion-check`工具的不同应用。
 
 # Orion  vGPU软件服务器端安装部署
 
@@ -122,12 +76,12 @@ nohup ./orion-controller start --log controller.log &
 ### 安装环境准备
 依赖项
 * Ubuntu 14.04, 16.04, CentOS 7.x
-* CUDA 9.0 （目前不支持其余CUDA版本）
+* CUDA 9.0 / 9.1 / 9.2 / 10.0
 * CUDNN 7.2及以上版本
-* NVIDIA driver 384及以上版本
+* NVIDIA driver 需要满足对应 CUDA SDK 的最低要求（例如 CUDA 9.0 对应 384，CUDA 10.0 对应 410）
 * libcurl
   
-这里我们假设读者的操作系统上已经安装384以上版本的NVIDIA显卡驱动。
+这里我们假设读者的操作系统上已经安装NVIDIA显卡驱动。
 
 用户可参考附录中的[CUDA和CUDNN快速安装](appendix.md#install-cuda)小节来安装`CUDA 9.0`和`CUDNN 7.x`。下文中我们假设用户的CUDA安装路径为默认的`/usr/local/cuda-9.0`，而CUDNN的动态库放在`/usr/local/cuda-9.0/lib64`目录下。
 
@@ -144,13 +98,13 @@ sudo yum install -y libcurl-devel.x86_64
 
 ### 安装Orion Server
 
-由于Orion Server运行时需要有CUDA环境支持，所以用户在安装Orion Server时，需要通过`CUDA_HOME`环境变量显式指定CUDA 9.0的安装路径：
+由于Orion Server运行时需要有CUDA环境支持，所以用户需要确保`/usr/local/`路径下有所需要支持的CUDA版本。例如，如果Orion Client端需要使用CUDA 10.0的应用，那么Orion Server所在物理机上，CUDA SDK需要安装到`/usr/local/cuda-10.0`路径（默认安装路径）。若要支持多版本CUDA，请将所有的CUDA SDK都放在`/usr/local`下。
+
+
 
 ```bash
-sudo CUDA_HOME=/usr/local/cuda-9.0 ./install-server.sh 
+sudo ./install-server.sh 
 ```
-
-值得注意的是，由于安装以`root`身份进行，即使当前用户环境中已经配置了`CUDA_HOME`环境变量（例如在~/.bashrc中），上述步骤中`CUDA_HOME=/usr/local/cuda-9.0` 仍然**不能**省略。
 
 若安装成功，会有下列输出：
 

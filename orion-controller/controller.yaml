@@ -1,0 +1,21 @@
+controller:
+  listen_ip: 0.0.0.0
+  listen_port: 9123
+  log_level: info
+  # log_file: if null, log will output to STDOUT
+  log_file: "null"
+  vgpu_num: 4
+
+
+database:
+  # config for etcd, support all configuration of etcd
+  name: etcd
+  # data-dir: if null, default dir is $HOME/.orion/etcd
+  data-dir: "null"
+  listen-client-urls: http://127.0.0.1:23790
+  advertise-client-urls: http://127.0.0.1:23790
+  listen-peer-urls: http://127.0.0.1:23800
+  initial-advertise-peer-urls: http://127.0.0.1:23800
+  initial-cluster: etcd=http://127.0.0.1:23800
+  initial-cluster-state: new
+  initial-cluster-token: Orion-database-cluster

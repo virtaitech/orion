@@ -1,0 +1,865 @@
+#!/bin/bash
+
+cd `dirname $0`
+SELF_PATH=$(pwd)
+
+function print_help {
+    echo "
+NAME:
+    Orion Health Check Tool
+
+VERSION:
+    v0.1
+
+COMMANDS:
+    install
+        server      Check health for installing Orion Server
+        client      Check health for installing Orion Client
+        controller  Check health for installing Orion Controller
+        all         Check health for installing all Orion components
+
+    runtime
+        server      Diagnose the status for Orion Server running
+        client      Diagnose the status for Orion Client running
+
+EXAMPLES:
+    orion-check install server
+    orion-check install client
+    orion-check runtime server
+"
+}
+
+
+while getopts "h" opt
+do
+    case $opt in
+        h)
+            print_help
+            exit 0;;
+        ?)
+            print_help
+            exit 1;;
+    esac
+done
+
+if [ -z "$1" -o -z "$2" ]; then
+    echo "Invalid usage for Orion Health Check Tool."
+    print_help
+    exit 1
+fi
+
+summary_os_support=
+function check_os {
+    OS_NAME=
+    OS_VERSION=
+    KERNAL_VERSION=$(uname -r)
+    if [ ! -f /etc/os-release ]; then
+        echo -e "\nOS information : unknown OS"
+        echo -e "               : Kernel $KERNAL_VERSION"
+        return 0
+    fi
+
+    OS_NAME=$(cat /etc/os-release | grep -w NAME | awk -F '"' '{print $2}' | awk '{print $1}')
+    OS_VERSION=$(cat /etc/os-release | grep -w VERSION_ID | awk -F '"' '{print $2}')
+    echo -e "\nOS information : $OS_NAME $OS_VERSION"
+    echo -e "               : Kernel $KERNAL_VERSION"
+
+    if [ $OS_NAME == "CentOS" ]; then
+        if [ $OS_VERSION == "7" ]; then
+            summary_os_support="Yes"
+        else
+            summary_os_support="No"
+        fi
+    elif [ $OS_NAME == "Ubuntu" ]; then
+        if [ $OS_VERSION == "16.04" ]; then
+            summary_os_support="Yes"
+        else
+            summary_os_support="Unknown"
+        fi
+    else
+        summary_os_support="Unknown"
+    fi
+}
+
+
+function check_hw_configuration {
+    echo -e "\nChecking CPU configuration ..."
+    lscpu | head -n -1
+
+    echo -e "\nChecking disk space ..."
+    df -hT
+}
+
+
+default_lib_path=(
+/lib
+/lib64
+/usr/lib
+/usr/lib64
+/usr/local/lib
+/usr/local/lib64
+)
+rdma_driver=0
+rdma_support=0
+summary_rdma_support="No"
+function find_rdma_support {
+    echo -e "\nChecking RDMA network support ..."
+    if ls /dev/infiniband/rdma_cm > /dev/null 2>&1; then
+        if ls /dev/infiniband/uverbs* > /dev/null 2>&1; then
+            rdma_driver=1
+            for path in ${default_lib_path[@]}; do
+                if [ -d $path ]; then
+                    result=$(find $path -name "librdmacm.so")
+                    if [ -n "$result" ]; then
+                        rdma_support=1
+                    fi
+                fi
+            done
+        fi
+    fi
+
+    if [ $rdma_support -eq 0 ]; then
+        if [ $rdma_driver -eq 0 ]; then
+            echo "No RDMA network support is found in the system."
+        else
+            echo "RDMA device is found but rdmacm library is not found in default searching path."
+        fi
+    else
+        echo "RDMA support is found in the system."
+        summary_rdma_support="Yes"
+        # Try to get information by using Mellanox OFED tools
+        if which ibdev2netdev > /dev/null 2>&1; then
+            printf "\n RMDA-Port    RDMA-Rate      Interface     Status\n"
+            printf " ------------------------------------------------\n"
+            i=0
+            ibdev2netdev |
+            while IFS= read -r line
+            do
+                mlx_port_name[$i]=$(echo $line | awk '{print $1}')
+                mlx_port_interface[$i]=$(echo $line | awk '{print $5}')
+                mlx_port_interface_status[$i]=$(echo $line | awk '{print $6}')
+
+                if which ibstatus > /dev/null 2>&1; then
+                    mlx_port_rate[$i]=$(ibstatus ${mlx_port_name[$i]} | grep -F "rate:" | awk '{print $2, $3}')
+                fi
+                printf "%8s %14s %14s %10s\n" "${mlx_port_name[$i]}" "${mlx_port_rate[$i]}" "${mlx_port_interface[$i]}" "${mlx_port_interface_status[$i]}"
+                let i++
+            done
+        fi
+    fi
+}
+
+
+cuda_install_path="/usr/local"
+cuda_path=
+summary_cuda_support="No"
+function find_cuda {
+    echo -e "\nSearching CUDA ..."
+    if [ -n "$CUDA_HOME" ]; then
+        echo "CUDA_HOME is set to ${CUDA_HOME}"
+    fi
+
+    possible_path=$(find $cuda_install_path -maxdepth 1 -type d -name "cuda*")
+    if [ -z "$possible_path" ]; then
+        echo -e "\033[31m[Error] Fail to find cuda in default path $cuda_install_path:\033[0m"
+        return 1
+    fi
+
+    i=0
+    for path in $possible_path; do
+        if ls $path/version.txt > /dev/null 2>&1; then
+            version=$(cat $path/version.txt | head -n 1)
+            echo "Find $version in $path"
+            if echo $version | grep "\<9.0." > /dev/null; then
+                summary_cuda_support="Yes"
+            fi
+            cuda_path[$i]=$path
+            let i++
+        fi
+    done
+}
+
+cudnn_version=
+summary_cudnn_support="No"
+function find_cudnn {
+    echo -e "\nSearching CUDNN ..."
+    i=0
+    for path in ${cuda_path[@]}; do
+        version=
+        pushd $path/lib64 > /dev/null
+        libcudnn=$(find -type l -name "libcudnn.so*" -o -type f -name "libcudnn.so*" | awk -F '/' '{print $2}')
+        if [ -n "$libcudnn" ]; then
+            version=$(find -type f -name "libcudnn.so*" | awk -F 'so.' '{print $2}')
+            if [ -z "$version" ]; then
+                version="(unknown version)"
+                if [ $summary_cudnn_support == "No" ]; then
+                    summary_cudnn_support="Unknown"
+                fi
+            fi
+            echo "CUDNN $version is installed in $path"
+            ls -l libcudnn.so* | awk '{print "   ", $9, $10, $11}'
+            cudnn_version[$i]=${version}
+
+            cudnn_major=$(echo $version | awk -F '.' '{print $1}')
+            cudnn_mid=$(echo $version | awk -F '.' '{print $2}')
+            if [ $cudnn_major == "7" ]; then
+                if [ $cudnn_mid -gt 1 ]; then
+                    summary_cudnn_support="Yes"
+                fi
+            fi
+            let i++
+        fi
+        popd > /dev/null
+    done
+
+    if [ $i -eq 0 ]; then
+        echo "No CUDNN library is found."
+    fi
+}
+
+
+summary_nvidia_gpu_support="No"
+function find_nvidia_gpu {
+    cuda_driver_version=
+    nvidia_gpu=
+
+    echo -e "\nSearching NVIDIA GPU ..."
+    if nvidia-smi -i 0 -q > /dev/null; then
+        cuda_driver_version=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader)
+        echo "CUDA driver $cuda_driver_version is installed."
+
+        gpus=$(nvidia-smi --query-gpu=gpu_name --format=csv,noheader)
+        if [ -z "$gpus" ]; then
+            echo -e "\033[33m[Warning] No NVIDIA GPU is found in the system.\033[0m"
+            return 0
+        fi
+
+        summary_nvidia_gpu_support="Yes"
+        i=0
+        tmp_ifs=$IFS
+        IFS=$'\n'
+        for name in $gpus; do
+            nvidia_gpu[$i]="$name"
+            let i++
+        done
+        IFS=$tmp_ifs
+
+        if [ $i -gt 1 ]; then
+            echo "$i NVIDIA GPUs are found :"
+        else
+            echo "$i NVIDIA GPU is found :"
+        fi
+
+        i=0
+        for name in "${nvidia_gpu[@]}"; do
+            echo "    $i :" "$name"
+            let i++
+        done
+    else
+        echo -e "\033[31m[Error] Fail to get NVIDIA driver version.\033[0m"
+        return 1
+    fi
+}
+
+
+enable_nvidia_mps=0
+summary_nvidia_mps="OFF"
+function find_mps_support {
+    echo -e "\nChecking NVIDIA MPS ..."
+    user=$(ps -aux | grep -v grep | grep -F "nvidia-cuda-mps-control" | awk '{print $1}')
+    if [ -n "$user" ]; then
+        enable_nvidia_mps=1
+        summary_nvidia_mps="ON"
+        echo "NVIDIA CUDA MPS is running by Linux account : $user"
+        echo -e "\033[33m[Info] Orion only supports enabling MPS with NVIDIA Volta and later GPU.\033[0m"
+    else
+        echo "NVIDIA CUDA MPS is off."
+    fi
+}
+
+
+etcd_running=0
+etcd_version=
+etcd_v2=0
+etcd_v3=0
+summary_etcd_support="No"
+function find_etcd {
+    echo -e "\nSeaching etcd service ..."
+    bin=
+    running_bin=$(ps -aux | grep -v grep | grep -w etcd | awk '{print $11}')
+    if [ -z "$running_bin" ]; then
+        if which etcd > /dev/null 2>&1; then
+            bin=$(which etcd)
+        fi
+    else
+        bin=$running_bin
+        etcd_running=1
+        summary_etcd_support="Yes"
+    fi
+
+    if [ -z "$bin" ]; then
+        echo "No etcd is running or installed in the system."
+        return 1
+    fi
+
+    etcd_version=$($bin --version | grep "etcd Version" | awk '{print $3}')
+    echo "etcd (version $etcd_version) is installed in $bin"
+
+    major=${etcd_version:0:1}
+    if [ $major -eq 2 ]; then
+        etcd_v2=1
+    elif [ $major -eq 3 ]; then
+        etcd_v3=1
+    fi
+}
+
+
+qemu_api_version=
+qemu_version=
+qemu_version_major=
+qemu_version_mid=
+qemu_net_list=
+summary_qemu_kvm_support="No"
+function find_qemu_kvm {
+    echo -e "\nSearching VM support ..."
+    running_bin=$(ps -aux | grep -v grep | grep -w libvirtd | awk '{print $11}')
+    if [ -z "$running_bin" ]; then
+        echo "libvirtd is not running. Please install libvirt-bin and start libvirtd before luanching Orion Server."
+        return 1
+    fi
+
+    qemu_api_version=$(virsh version | grep "Using API" | awk '{print $4}')
+    qemu_version=$(virsh version | grep "Running hypervisor" | awk '{print $4}')
+    qemu_version_major=$(echo $qemu_version | awk -F '.' '{print $1}')
+    qemu_version_mid=$(echo $qemu_version | awk -F '.' '{print $2}')
+    echo "QEMU API version : $qemu_api_version"
+    echo "QEMU version : $qemu_version"
+
+    if [ $qemu_version_major == "2" ]; then
+        summary_qemu_kvm_support="Yes"
+    fi
+
+    nets=$(virsh net-list | tail -n +3 | head -n -1 | awk '{print $1}')
+    i=0
+    for net in $nets; do
+        qemu_net_list[$i]=$(virsh net-dumpxml $net | grep -F "<ip address=" | awk -F "'" '{print $2}')
+        let i++
+    done
+
+    if [ $i -eq 0 ]; then
+        echo "No active virtual network is found for QEMU-KVM environment."
+    else
+        echo "Following virtual networks are found for QEMU-KVM environment."
+        for net in ${qemu_net_list[@]}; do
+            echo "    $net"
+        done
+    fi
+}
+
+
+docker_installed=0
+docker_gateway=
+summary_docker_support="No"
+function find_docker {
+    echo -e "\nSearching Docker container environment ..."
+    if which docker > /dev/null 2>&1; then
+        docker_installed=1
+        if docker images 2>&1 | grep "Cannot connect" > /dev/null; then
+            echo "Docker is not launched in the system"
+            return
+        fi
+
+        if docker images 2>&1 | grep "permission denied" > /dev/null; then
+            echo "Permission denied to check docker environment."
+            return
+        fi
+
+        summary_docker_support="Yes"
+        docker version
+        docker_gateway=$(docker inspect -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}' bridge)
+        if [ -z "$docker_gateway" ]; then
+            docker_gateway=$(ip addr show docker0 2>/dev/null | grep inet | awk '{print $2}' | awk -F '/' '{print $1}')
+        fi
+    else
+        echo "Docker is not installed in the system"
+    fi
+}
+
+
+server_name="oriond"
+summary_server_support="No"
+function check_server_install {
+    echo -e "\nChecking Orion Server binary ..."
+    if [ ! -f ${server_name} ]; then
+        echo "Can not find installation file \"${server_name}\""
+        return 1
+    fi
+
+    if [ -z "$CUDA_HOME" ]; then
+        echo -e "\033[33mCUDA_HOME is not set in current enviornment. You may want to set it before doing the checking.\033[0m"
+    else
+        export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+    fi
+
+    unfound_lib=$(ldd ${server_name} | grep "not found" | awk '{print $1}')
+    if [ -n "$unfound_lib" ]; then
+        echo -e "\033[31mFollowing libraries are needed but not found :\033[0m"
+        echo "$unfound_lib"
+        return 1
+    fi
+
+    summary_server_support="Yes"
+}
+
+
+function check_controller_runtime {
+    config_path=
+    if [ "$1" == "server" ]; then
+        config_path="/etc/orion/server.conf"
+    else
+        config_path="/etc/orion/client.conf"
+    fi
+
+    echo -e "\nChecking Orion Controller status ..."
+    echo -e "\033[33m[Info] Orion Controller setting may be different in different SHELL.\033[0m"
+    echo -e "\033[33m[Info] Environment variable ORION_CONTROLLER has the first priority.\033[0m\n"
+    controller_addr_env=$ORION_CONTROLLER
+    controller_addr=
+    if [ -r $config_path ]; then
+        controller_addr=$(sed -n 's/^\s*controller_addr\s*=\s*\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*:[0-9]*\).*/\1/p' $config_path)
+        controller_addr=${controller_addr:-"127.0.0.1:9123"}
+    fi
+
+    if [ -z "$controller_addr_env" -a -z "$controller_addr" ]; then
+        echo -e "\033[31m[Error] No Orion Controller address is set in either environment variable ORION_CONTROLLER or configuration file.\033[0m"
+        return
+    fi
+
+    controller_ip=
+    controller_port=
+    target_addr=
+    if [ -n "$controller_addr_env" ]; then
+        target_addr=$controller_addr_env
+        echo "Environment variable ORION_CONTROLLER is set as ${controller_addr_env} Using this address to diagnose Orion Controller."
+    else
+        target_addr=$controller_addr
+        echo "Orion Controller addrress is set as $controller_addr in configuration file. Using this address to diagnose Orion Controller"
+    fi
+
+    controller_ip=$(echo $target_addr | awk -F ':' '{print $1}')
+    controller_port=$(echo $target_addr | awk -F ':' '{print $2}')
+    if [ -z "$controller_port" ]; then
+        echo -e "\033[31m[Error] Invalid Orion Controller address. No port is specified.\033[0m"
+        return
+    fi
+
+    if which nc > /dev/null 2>&1; then
+        if nc -zv $controller_ip $controller_port > /dev/null 2>&1; then
+            echo "Address $target_addr is reached."
+        else
+            echo -e "\033[31m[Error] Can not reach ${target_addr}. Please make sure Orion Controller is launched at the address, and the firewall is correctly set.\033[0m"
+            return
+        fi
+    fi
+
+    if which curl > /dev/null 2>&1; then
+        result=$(curl -s "http://$target_addr/info?data_version&api_version")
+        if [ $? -ne 0 ]; then
+            echo -e "\033[31m[Error] Can not reach ${target_addr}. Please make sure Orion Controller is launched at the address, and the firewall is correctly set.\033[0m"
+            return
+        else
+            echo "Orion Controller Version Infomation : $result"
+        fi
+
+        data_version=$(echo $result | awk -F ',' '{print $1}')
+        api_version=$(echo $result | awk -F ',' '{print $2}')
+
+        data_version=${data_version/=/:}
+        api_version=${api_version/=/:}
+
+        result=$(curl -s -H "${data_version}" -H "${api_version}" "http://$target_addr/devices?res=nvidia_cuda&used=true")
+        if [ $? -ne 0 ]; then
+            echo -e "\033[31m[Error] Can not fetch vGPU status from Orion Controller.\033[0m"
+            return
+        else
+            free_num=${result##*=}
+        fi
+
+        result=$(curl -s -H "${data_version}" -H "${api_version}" "http://$target_addr/devices?res=nvidia_cuda")
+        if [ $? -ne 0 ]; then
+            echo -e "\033[31m[Error] Can not fetch vGPU status from Orion Controller.\033[0m"
+            return
+        else
+            total_num=${result##*=}
+        fi
+
+        echo "There are $total_num vGPU under managered by Orion Controller. $free_num vGPU are free now."
+    else
+        echo -e "\033[33mLinux curl is needed to diagnose Orion Controller.\033[0m"
+        return
+    fi
+}
+
+
+function check_oriond_runtime {
+    echo -e "\nChecking Orion Server status ..."
+    if ! which netstat > /dev/null 2>&1; then
+        echo "Linux tool netstat is not found. Installing the tool helps to diagnose the system."
+    fi
+    if ! which nc > /dev/null 2>&1; then
+        echo "Linux tool net-cat is not found. Installing the tool helps to diagnose the system."
+    fi
+    if ! which curl > /dev/null 2>&1; then
+        echo "Linux tool curl is not found. Installing the tool helps to diagnose the system."
+    fi
+
+    running_bin=$(ps -aux | grep -v grep | grep -w oriond)
+    if [ -z "$running_bin" ]; then
+        echo -e "\033[33mOrion Server is not running.\033[0m\n"
+
+        bin_path=
+        if [ -f ${server_name} ]; then
+            bin_path=${server_name}
+        else
+            if [ -f /usr/bin/${server_name} ]; then
+                bin_path="/usr/bin/${server_name}"
+            else
+                echo "Can not find Orion Server binary \"oriond\" in either `pwd` or /usr/bin."
+            fi
+        fi
+
+        if [ -r /etc/systemd/system/oriond.service ]; then
+            bin_path=$(cat /etc/systemd/system/oriond.service | grep -F 'ExecStart=' | awk -F '=' '{print $2}')
+            echo "Orion Server has been registered as system service. Using binary $bin_path to infer the runtime environment."
+            ld_path=$(cat /etc/systemd/system/oriond.service | grep -F 'Environment="LD_LIBRARY_PATH=' | awk -F '[="]' '{print $4}')
+            path_path=$(cat /etc/systemd/system/oriond.service | grep -F 'Environment="PATH=' | awk -F '[="]' '{print $4}')
+            if [ -n "$ld_path" ]; then
+                export LD_LIBRARY_PATH=$ld_path
+                echo "Injecting oriond service environment LD_LIBRARY_PATH=$ld_path"
+            fi
+
+            if [ -n "$path_path" ]; then
+                export PATH=$path_path
+                echo "Injecting oriond service environment PATH=$path_path"
+            fi
+        fi
+
+        if [ -n "$bin_path" ]; then
+
+            unfound_lib=$(ldd ${bin_path} | grep "not found" | awk '{print $1}')
+            if [ -n "$unfound_lib" ]; then
+                echo -e "\033[31mFollowing libraries are needed but not found in current environment:\033[0m"
+                echo "$unfound_lib"
+                return 1
+            fi
+        fi
+
+        controller_addr_env=$ORION_CONTROLLER
+        if [ -n "$controller_addr_env" ]; then
+            if echo $controller_addr_env | grep ":" > /dev/null; then
+                echo "Environment variable ORION_CONTROLLER=$controller_addr_env is set in current SHELL."
+            else
+                echo "Environment variable ORION_CONTROLLER=$controller_addr_env is set in current SHELL."
+                echo "\033[33m[Warning] Invalid format. No port is specified.\033[0m"
+            fi
+        fi
+
+        controller_addr=
+        if [ -r /etc/orion/server.conf ]; then
+            controller_addr=$(sed -n 's/^\s*controller_addr\s*=\s*\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*:[0-9]*\).*/\1/p' /etc/orion/server.conf)
+            bind_ip=$(sed -n 's/^\s*bind_addr\s*=\s*\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' /etc/orion/server.conf)
+            bind_port=$(sed -n 's/^\s*listen_port\s*=\s*\([0-9]*\).*/\1/p' /etc/orion/server.conf)
+
+            controller_addr=${controller_addr:-"127.0.0.1:9123"}
+            bind_ip=${bind_ip:-"127.0.0.1"}
+            bind_port=${bind_port:-"9960"}
+
+            echo ""
+            echo "Configuration file is found at /etc/orion/server.conf"
+            echo "Orion Server will connect to Orion Controller at $controller_addr unless the setting is overwritten by environment variable \"ORION_CONTROLLER\""
+            echo "Orion Server will listen on port $bind_port unless the setting is overwritten by -p option"
+
+            valid_ip=0
+            if ip addr > /dev/null 2>&1; then
+                while read line
+                do
+                    if [ $bind_ip == ${line} ]; then
+                        valid_ip=1
+                        break
+                    fi
+                done <<< "$(ip addr | grep -w inet | awk '{print $2}' | awk -F '/' '{print $1}')"
+            else
+                valid_ip=1
+            fi
+
+            if [ $valid_ip -eq 1 ]; then
+                echo "Orion Server will bind to address $bind_ip unless the setting is overwritten by -b option"
+            else
+                echo -e "\033[33mOrion Server is configured to bind at address \"${bind_ip}\" which may be invalid.\033[0m"
+            fi
+
+            cfg_enable_shm=0
+            cfg_enable_rdma=0
+            cfg_enable_kvm=0
+            if [ -f /etc/orion/server.conf ]; then
+                result=$(sed -n 's/^\s*enable_shm\s*=\s*"\([a-z]*\)".*/\1/p' /etc/orion/server.conf)
+                if [ "$result"x == "truex" ]; then
+                    cfg_enable_shm=1
+                fi
+                result=$(sed -n 's/^\s*enable_rdma\s*=\s*"\([a-z]*\)".*/\1/p' /etc/orion/server.conf)
+                if [ "$result"x == "truex" ]; then
+                    cfg_enable_rdma=1
+                fi
+                result=$(sed -n 's/^\s*enable_kvm\s*=\s*"\([a-z]*\)".*/\1/p' /etc/orion/server.conf)
+                if [ "$result"x == "truex" ]; then
+                    cfg_enable_kvm=1
+                fi
+            fi
+
+            printf "%-40s" "Enable SHM"
+            if [ $cfg_enable_shm == 1 ]; then
+                printf "[Yes]\n"
+            else
+                printf "[No]\n"
+            fi
+
+            printf "%-40s" "Enable RDMA"
+            if [ $cfg_enable_rdma == 1 ]; then
+                printf "[Yes]\n"
+            else
+                printf "[No]\n"
+            fi
+
+            printf "%-40s" "Enable Local QEMU-KVM with SHM"
+            if [ $cfg_enable_kvm == 1 ]; then
+                printf "[Yes]\n"
+            else
+                printf "[No]\n"
+            fi
+        else
+            echo "No configuration is set in the system. Default setting and environment variables will be used to configure Orion Server."
+            echo -e "Orion Server will connect to Orion Controller set by environment variable \033[32mORION_CONTROLLER\033[0m"
+            echo -e "Orion Server will bind to address \033[32m127.0.0.1\033[0m unless the setting is overwritten by \033[32m-b\033[0m option"
+            echo -e "Orion Server will listen on port \033[32m9960\033[0m unless the setting is overwritten by \033[32m-p\033[0m option"
+            bind_port=9960
+        fi
+
+        if which netstat > /dev/null 2>&1; then
+            result=$(netstat -tulpn 2>/dev/null | grep -w LISTEN | awk '{print $4}' | grep ":${bind_port}\>")
+            if [ -n "$result" ]; then
+                echo -e "\033[33m[Warning] Linux port $bind_port is in used by other program.\033[0m"
+            fi
+        fi
+    else
+        pid=$(ps -aux | awk '{print $2,$11}' | grep -v grep | grep -w "oriond" | awk '{print $1}')
+        pid_controller=$(strings /proc/${pid}/environ | grep ORION_CONTROLLER | awk -F '=' '{print $2}')
+        if [ -n "$pid_controller" ]; then
+            echo "Orion Server runs with environment ORION_CONTROLLER=${pid_controller}"
+            export ORION_CONTROLLER=${pid_controller}
+        fi
+
+		cfg_enable_shm=0
+		cfg_enable_rdma=0
+		cfg_enable_kvm=0
+		if [ -f /etc/orion/server.conf ]; then
+			result=$(sed -n 's/^\s*enable_shm\s*=\s*"\([a-z]*\)".*/\1/p' /etc/orion/server.conf)
+			if [ "$result"x == "truex" ]; then
+				cfg_enable_shm=1
+			fi
+			result=$(sed -n 's/^\s*enable_rdma\s*=\s*"\([a-z]*\)".*/\1/p' /etc/orion/server.conf)
+			if [ "$result"x == "truex" ]; then
+				cfg_enable_rdma=1
+			fi
+			result=$(sed -n 's/^\s*enable_kvm\s*=\s*"\([a-z]*\)".*/\1/p' /etc/orion/server.conf)
+			if [ "$result"x == "truex" ]; then
+				cfg_enable_kvm=1
+			fi
+		fi
+
+        user_name=$(ps -aux | grep -v grep | grep "oriond" | awk '{print $1}')
+        command_line=$(ps -aux | grep -v grep | grep "oriond" | awk '{for(i=11;i<=NF;i++){printf "%s ", $i}; printf "\n"}')
+        echo "Orion Server is running with Linux user   : $user_name"
+        echo "Orion Server is running with command line : $command_line"
+
+        cudart_path=$(ls -l /proc/${pid}/map_files | grep libcudart | awk '{print $11}' | head -n 1 | awk -F 'so.' '{print $2}')
+        if [ -n "$cudart_path" ]; then
+            echo "Orion Server is running with CUDA version $cudart_path"
+        fi
+
+        cudnn_path=$(ls -l /proc/${pid}/map_files | grep libcudnn | awk '{print $11}' | head -n 1 | awk -F 'so.' '{print $2}')
+        if [ -n "$cudnn_path" ]; then
+            echo "Orion Server is running with CUDNN version $cudnn_path"
+        fi
+
+
+        enable_shm=0
+        enable_rdma=0
+        enable_kvm=0
+        bind_ip=
+        bind_port=9960
+
+        printf "%-40s" "Enable SHM"
+        if echo $command_line | grep -e " -m " > /dev/null; then
+            enable_shm=1
+            printf "[Yes]\n"
+		elif [ $cfg_enable_shm == 1 ]; then
+            enable_shm=1
+            printf "[Yes]\n"
+        else
+            printf "[No]\n"
+        fi
+
+        printf "%-40s" "Enable RDMA"
+        if echo $command_line | grep -e " -r " > /dev/null; then
+            enable_rdma=1
+            printf "[Yes]\n"
+		elif [ $cfg_enable_rdma == 1 ]; then
+            enable_rdma=1
+            printf "[Yes]\n"
+        else
+            printf "[No]\n"
+        fi
+
+        printf "%-40s" "Enable Local QEMU-KVM with SHM"
+        if echo $command_line | grep -e " -k " > /dev/null; then
+            enable_kvm=1
+            printf "[Yes]\n"
+		elif [ $cfg_enable_kvm == 1 ]; then
+            enable_kvm=1
+            printf "[Yes]\n"
+        else
+            printf "[No]\n"
+        fi
+
+        if which netstat > /dev/null 2>&1; then
+            listen_addr=$(netstat -nap 2>/dev/null | grep oriond | grep LISTEN | awk '{print $4}' | sort | head -n 1)
+            if [ -n "$listen_addr" ]; then
+                bind_ip=$(echo $listen_addr | awk -F ':' '{print $1}')
+                listen_port=$(echo $listen_addr | awk -F ':' '{print $2}')
+            fi
+        else
+            if echo $command_line | grep -e " -b " > /dev/null; then
+                bind_ip=$(echo $command_line | sed -n 's/.*\s\+-b\s\+\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+            else
+                if [ -r /etc/orion/server.conf ]; then
+                    bind_ip=$(sed -n 's/^\s*bind_addr\s*=\s*\([0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\)/\1/p' /etc/orion/server.conf)
+                    bind_port=$(sed -n 's/^\s*listen_port\s*=\s*\([0-9]*\)/\1/p' /etc/orion/server.conf)
+                    bind_ip=${bind_ip:-"127.0.0.1"}
+                    bind_port=${bind_port:-"9960"}
+                fi
+            fi
+        fi
+
+        printf "%-40s%s\n" "Binding IP Address :" "$bind_ip"
+        printf "%-40s%s\n\n" "Listening Port :" "$bind_port"
+
+        if which nc > /dev/null 2>&1; then
+            echo "Testing the Orion Server network ..."
+            if nc -zv $bind_ip $listen_port > /dev/null 2>&1; then
+                echo "Orion Server can be reached through $listen_addr"
+            else
+                echo "Orion Server can not be reached through $listen_addr"
+                echo "Please check the firewall setting."
+            fi
+        fi
+    fi
+}
+
+
+
+if [ "$1" == "install" ]; then
+    if [ "$2" == "all" ]; then
+        check_os
+        find_rdma_support
+        find_cuda
+        find_cudnn
+        find_nvidia_gpu
+        find_mps_support
+        find_etcd
+        find_qemu_kvm
+        find_docker
+        check_server_install
+
+        echo -e "\n==============================================="
+        echo -e "Installation summaries :\n"
+        printf "%-40s [%s]\n" "OS :" "$summary_os_support"
+        printf "%-40s [%s]\n" "RDMA :" "$summary_rdma_support"
+        printf "%-40s [%s]\n" "CUDA :" "$summary_cuda_support"
+        printf "%-40s [%s]\n" "CUDNN :" "$summary_cudnn_support"
+        printf "%-40s [%s]\n" "NVIDIA GPU :" "$summary_nvidia_gpu_support"
+        printf "%-40s [%s]\n" "NVIDIA CUDA MPS :" "$summary_nvidia_mps"
+        printf "%-40s [%s]\n" "etcd service :" "$summary_etcd_support"
+        printf "%-40s [%s]\n" "QEMU-KVM environment :" "$summary_qemu_kvm_support"
+        printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
+        printf "%-40s [%s]\n" "Orion Server binary:" "$summary_server_support"
+    elif [ "$2" == "server" ]; then
+        check_os
+        find_rdma_support
+        find_cuda
+        find_cudnn
+        find_nvidia_gpu
+        find_mps_support
+        find_qemu_kvm
+        find_docker
+        check_server_install
+
+        echo -e "\n==============================================="
+        echo -e "Installation summaries :\n"
+        printf "%-40s [%s]\n" "OS :" "$summary_os_support"
+        printf "%-40s [%s]\n" "RDMA :" "$summary_rdma_support"
+        printf "%-40s [%s]\n" "CUDA :" "$summary_cuda_support"
+        printf "%-40s [%s]\n" "CUDNN :" "$summary_cudnn_support"
+        printf "%-40s [%s]\n" "NVIDIA GPU :" "$summary_nvidia_gpu_support"
+        printf "%-40s [%s]\n" "NVIDIA CUDA MPS :" "$summary_nvidia_mps"
+        printf "%-40s [%s]\n" "QEMU-KVM environment :" "$summary_qemu_kvm_support"
+        printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
+        printf "%-40s [%s]\n" "Orion Server binary:" "$summary_server_support"
+    elif [ "$2" == "client" ]; then
+        check_os
+        find_rdma_support
+        find_qemu_kvm
+        find_docker
+
+        echo -e "\n==============================================="
+        echo -e "Installation summaries :\n"
+        printf "%-40s [%s]\n" "OS :" "$summary_os_support"
+        printf "%-40s [%s]\n" "RDMA :" "$summary_rdma_support"
+        printf "%-40s [%s]\n" "QEMU-KVM environment :" "$summary_qemu_kvm_support"
+        printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
+    elif [ "$2" == "controller" ]; then
+        check_os
+        find_etcd
+
+        echo -e "\n==============================================="
+        echo -e "Installation summaries :\n"
+        printf "%-40s [%s]\n" "OS :" "$summary_os_support"
+        printf "%-40s [%s]\n" "etcd service :" "$summary_etcd_support"
+
+        if [ $summary_etcd_support == "No" ]; then
+            echo -e "\n\033[31mOrion Controller can not be installed in this environment.\033[0m"
+        fi
+    else
+        echo "Invalid parameters."
+        print_help
+        exit 1
+    fi
+elif [ "$1" == "runtime" ]; then
+    if [ "$2" == "server" ]; then
+        find_nvidia_gpu
+        find_mps_support
+        check_oriond_runtime
+        check_controller_runtime server
+    elif [ "$2" == "client" ]; then
+        check_controller_runtime client
+    else
+        echo "Invalid parameters."
+        print_help
+        exit 1
+    fi
+else
+    echo "Invalid parameters."
+    print_help
+    exit 1
+fi
+
+

@@ -134,7 +134,7 @@ There are 8 vGPU under managered by Orion Controller. 8 vGPU are free now.
 
 ```bash
 # From inside VM
-sudo ./install-client
+sudo ./install-client-9.0
 ```
 
 此时，用户没有指定安装路径，安装包会询问是否将Orion Client运行时安装到默认路径`/usr/lib/orion`下。得到用户许可后，安装包会通过`ldconfig`机制将Orion Client运行时添加到操作系统动态库搜索路径。
@@ -160,7 +160,7 @@ export LD_LIBRARY_PATH=/usr/lib/orion:$LD_LIBRARY_PATH
 # From inside VM
 INSTALLATION_PATH=/orion
 sudo mkdir -p $INSTALLATION_PATH
-sudo ./install-client -d $INSTALLATION_PATH
+sudo ./install-client-9.0 -d $INSTALLATION_PATH
 ```
 这种情形下，安装包会直接将Orion Client运行时安装到用户指定的`INSTALLATION_PATH=/orion`路径下，并向屏幕输出下列提示：
 

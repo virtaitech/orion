@@ -110,7 +110,7 @@ orion-shm
 我们提供配置好Orion Client runtime的预先安装好官方原生TensorFlow 1.12的Docker镜像，以Python3.5版本为例：
 
 ```bash
-docker pull virtaitech/orion-client:tf1.12-py3
+docker pull virtaitech/orion-client:cu9.0-tf1.12-py3
 ```
 
 有兴趣的读者可以参考我们的[Dockerfile](#)来构建自己的容器。
@@ -142,7 +142,7 @@ docker run -it --rm \
     -e ORION_CONTROLLER=127.0.0.1:9123 \
     -e ORION_VGPU=1 \
     -e ORION_GMEM=10500 \
-    virtaitech/orion-client:tf1.12-py3
+    virtaitech/orion-client:cu9.0-tf1.12-py3
 ```
 
 读者可以在容器中通过`ls /dev | grep nvidia`确认容器中没有挂载NVIDIA显卡设备。
@@ -281,7 +281,7 @@ docker run -it --rm \
     -e ORION_CONTROLLER=172.17.0.1:9123 \
     -e ORION_VGPU=1 \
     -e ORION_GMEM=10500 \
-    virtaitech/orion-client:tf1.12-py3
+    virtaitech/orion-client:cu9.0-tf1.12-py3
 ```
 
 同样，我们需要在容器内部检查是否能向Orion Controller申请资源：

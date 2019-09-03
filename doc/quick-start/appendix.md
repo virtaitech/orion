@@ -56,9 +56,9 @@ systemctl start firewalld
 #### 安装前准备
 需要满足以下要求
 * Ubuntu 14.04, 16.04, CentOS 7.x
-* CUDA 9.0 （目前不支持其余CUDA版本）
+* CUDA 9.0 / 9.1 / 9.2 / 10.0
 * CUDNN 7.2及以上版本
-* NVIDIA driver 384及以上版本
+* NVIDIA driver 满足 CUDA SDK 最低要求 （CUDA 9.0对应384，CUDA 10.0对应410）
 * 安装`libcurl`库
 
 我们依然使用`orion-check`工具检查环境：
@@ -218,7 +218,7 @@ Done
 
     ```bash
     mkdir /usr/local/cuda-9.0
-    ./install-client -d /usr/local/cuda-9.0
+    ./install-client-9.0 -d /usr/local/cuda-9.0
     ln -s /usr/local/cuda-9.0 /usr/local/cuda
     ```
     

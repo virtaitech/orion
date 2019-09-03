@@ -16,31 +16,37 @@ Orion vGPU软件由[VirtAI Tech 趋动科技](https://virtai.tech)开发，是�
 Orion vGPU软件用户手册
 
 # [Docker Image](dockerfiles)
-预装好无修改的深度学习框架（TensorFlow, PyTorch），以及Orion Client Runtime的容器镜像。
+预装好深度学习框架（TensorFlow, PyTorch），以及Orion Client Runtime的容器镜像。
 
 # <a id="tech-blog"></a>More
 我们通过若干技术博客，向用户展示更多的Orion vGPU软件使用场景。
 
+* [Kubernetes-Orion-Plugin 在k8s集群中调度vGPU资源](./doc/Orion-k8s-device-plugin.md)
 * [TensorFlow 使用Orion vGPU软件加速模型训练与推理](./blogposts/tensorflow_models.md)
 * [PyTorch 使用Orion vGPU软件加速模型训练与推理](./blogposts/pytorch_models.md)
 
 # What's New
 
-* **2019/07/08** Docker 镜像更新：[PyTorch 1.0.1](./dockerfiles/client-pytorch-1.0.1-py3)，[TensorFlow 1.8.0](./dockerfiles/client-tf1.8-base)
+* **2019/09/03** 支持多CUDA版本：CUDA 9.0, 9.1, 9.2, 10.0； 提供 k8s-orion-plugin
 
-  PyTorch 1.0.1镜像中，PyTorch 1.0.1和torchvision 0.2.2均由官方wheels安装，无须从源码编译。
-  
-  用户使用最新镜像之前，需要确保Orion Server已经更新至最新版本。
+    Orion Server 可以动态支持多种CUDA版本共存，只需要确保`/usr/local`目录下有对应的CUDA SDK，例如`/usr/local/cuda-10.0`，`/usr/local/cuda-9.0`。
+    
+    对多版本的支持既不需要设置`/usr/local/cuda`软链接，也不需要设置环境变量。
+    
+    Orion Client端，取决于用户程序的需求，需要安装对应于不同CUDA版本的Orion Client Runtime：
 
-* **2019/07/06** Orion vGPU软件更新：更加精确的显存控制
+    ```bash
+    # Install Orion client runtime corresponding to CUDA version 10.0
+    ./install-client-10.0
+    ```
 
-  用户需要确保Orion Controller，Orion Server和Orion Client更新至最新版本。不同版本的Orion vGPU组件无法共同工作。
+    用户需要确保同时更新所有组件
   
   * `Orion Controller` 使用最新的`orion-controller`
 
   * `Orion Server` 使用最新的安装包重新安装并启动
   
-  * `Orion Client` 使用`docker pull`更新已有镜像，或者在裸机/KVM虚拟机上用最新的`install-client`重新安装。
+  * `Orion Client` 通过`docker pull`获取新版镜像，或者在裸机/KVM虚拟机上用最新的`install-client-x.y`重新安装。
 
 # Contact Us
 
