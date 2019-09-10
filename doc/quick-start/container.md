@@ -130,14 +130,11 @@ docker pull virtaitech/orion-client:cu9.0-tf1.12-py3
 
 如上文所述，我们在用`docker run`命令启动容器时，需要用`-e`参数设置上一节介绍的环境变量，并用`-v`参数将创建的`/dev/shm/orionsock0`共享内存挂载到容器内的`/dev/shm`目录下。
 
-为了方便运行Jupyter Notebook训练TensorFlow官方提供的`pix2pix`模型例子，我们假设用户已经将[pix2pix模型的Jupyter Notebook文件](https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/eager/python/examples/pix2pix/pix2pix_eager.ipynb)保存到执行`docker run`的目录下。
-
-**注意** 直接用`wget <url/to/pix2pix_eager.ipynb>`命令所下载到的并不是真正的Jupyter Notebook文件，而是一个html文件。用户可能需要将整个TensorFlow repo下载到本地，再将`pix2pix_eager.ipynb`放到工作目录下。
+**注：** 为了方便运行Jupyter Notebook训练TensorFlow官方提供的`pix2pix`模型例子，我们在容器中**已经**将[pix2pix模型的Jupyter Notebook文件](https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/eager/python/examples/pix2pix/pix2pix_eager.ipynb)保存到`/root`目录下，用户**无需手动下载**。
 
 ```bash
 docker run -it --rm \
     -v /dev/shm/orionsock0:/dev/shm/orionsock0:rw \
-    -v $(pwd)/pix2pix_eager.ipynb:/root/pix2pix_eager.ipynb \
     --net host \
     -e ORION_CONTROLLER=127.0.0.1:9123 \
     -e ORION_VGPU=1 \
@@ -203,7 +200,7 @@ ssh -Nf -L 8888:localhost:8888 <username@client-machine>
 
 ## **使用TensorFlow 1.12 Eager Execution模式进行 pix2pix 模型训练与推理**
 
-打开`pix2pix_eager.ipynb`，通过点击菜单栏下方的Run按钮，依次执行每一个Cell（每一次点击只会执行当前Cell）。其间会从Berkeley大学服务器上下载29MB的数据集[`facades.tar.gz`](https://people.eecs.berkeley.edu/~tinghuiz/projects/pix2pix/datasets/facades.tar.gz)。如果运行容器的节点上从海外服务器下载数据过慢，用户可能需要在别的节点下载数据集，下载完成后放置在容器运行节点上`pix2pix_eager.ipynb`所在目录下。
+打开`pix2pix_eager.ipynb`，通过点击菜单栏下方的Run按钮，依次执行每一个Cell（每一次点击只会执行当前Cell）。为方便用户，我们预先下载了Berkeley大学服务器上下载29MB的数据集[`facades.tar.gz`](https://people.eecs.berkeley.edu/~tinghuiz/projects/pix2pix/datasets/facades.tar.gz) 放在容器中，用户无需等待数据下载。
 
 ![download-dataset](./figures/pix2pix/download.png)
 
@@ -276,7 +273,6 @@ systemctl restart oriond
 ```bash
 docker run -it --rm \
     -v /dev/shm/orionsock0:/dev/shm/orionsock0:rw \
-    -v $(pwd)/pix2pix_eager.ipynb:/root/pix2pix_eager.ipynb \
     -p 8888:8888 \
     -e ORION_CONTROLLER=172.17.0.1:9123 \
     -e ORION_VGPU=1 \

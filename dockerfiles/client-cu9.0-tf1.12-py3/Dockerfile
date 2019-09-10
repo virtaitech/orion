@@ -36,6 +36,9 @@ RUN pip3 install tensorflow-gpu==1.12.0
 
 WORKDIR /root
 
+# Clone TF official benchmark
+RUN git clone https://github.com/tensorflow/benchmarks.git --branch=cnn_tf_v1.12_compatible
+
 # Install Orion Client runtime
 RUN rm /etc/ld.so.conf.d/cuda-9-0.conf && rm /etc/ld.so.conf.d/nvidia.conf
 COPY install-client-9.0 .

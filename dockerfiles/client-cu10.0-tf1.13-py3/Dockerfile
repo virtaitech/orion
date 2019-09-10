@@ -36,6 +36,9 @@ RUN pip3 install tensorflow-1.13.1-cp35-cp35m-linux_x86_64.whl && rm tensorflow-
 
 WORKDIR /root
 
+# Clone TF official benchmark
+RUN git clone https://github.com/tensorflow/benchmarks.git --branch=cnn_tf_v1.13_compatible
+
 # Install Orion Client runtime
 RUN rm /etc/ld.so.conf.d/cuda-10-0.conf && rm /etc/ld.so.conf.d/nvidia.conf
 COPY install-client-10.0 .
