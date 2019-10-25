@@ -50,7 +50,9 @@ if systemctl status oriond > /dev/null 2>&1; then
 fi
 
 mkdir -p /var/log/orion
+mkdir -p /var/tmp/orion
 chmod 777 /var/log/orion
+chmod 777 /var/tmp/orion
 
 cp oriond orion-check orion-shm $install_path
 chmod 755 $install_path/oriond

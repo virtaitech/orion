@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: orion-server
+  labels:
+    k8s-app: virtaitech
+spec:
+  selector:
+    matchLabels:
+      name: orion-server
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      labels:
+        name: orion-server
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      hostNetwork: true
+      hostIPC: true
+      hostPID: true
+      containers:
+      - image: virtaitech/orion-server:cu10.0
+        name: orion-server
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: shm
+            mountPath: "/dev/shm"
+        env:
+        - name : ORION_CONTROLLER
+          value : "127.0.0.1:9123"
+        - name : BIND_ADDR
+          value : "172.17.0.1"
+        - name : PORT
+          value : "9960"
+        - name : VGPU
+          value : "2"
+        - name : LOG_LEVEL
+          value : "INFO"
+      volumes:
+        - name: shm
+          hostPath:
+            path: /dev/shm

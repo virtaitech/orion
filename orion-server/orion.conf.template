@@ -9,7 +9,7 @@
 
 [server-log]
     log_with_time = 1
-    log_to_screen = 0
+    log_to_screen = 1
     log_to_file = 1
     log_level = INFO
     file_log_level = INFO

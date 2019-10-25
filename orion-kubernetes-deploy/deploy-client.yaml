@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: orion-client-
+spec:
+  restartPolicy: Never
+  hostNetwork: false
+  containers:
+  - name: orion-client
+    image: virtaitech/orion-client/cu90-tf1.12-py3
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: false
+    command: ["bash", "-c"]
+    args: ["cd cuda9.0-regression/cuda_samples/vectorAdd; ./vectorAdd"]
+    resources:
+      limits:
+        virtaitech.com/gpu: 1  
+    env:
+      - name : ORION_GMEM
+        value : "4096"
+
+

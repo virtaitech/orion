@@ -278,42 +278,6 @@ function find_mps_support {
 }
 
 
-etcd_running=0
-etcd_version=
-etcd_v2=0
-etcd_v3=0
-summary_etcd_support="No"
-function find_etcd {
-    echo -e "\nSeaching etcd service ..."
-    bin=
-    running_bin=$(ps -aux | grep -v grep | grep -w etcd | awk '{print $11}')
-    if [ -z "$running_bin" ]; then
-        if which etcd > /dev/null 2>&1; then
-            bin=$(which etcd)
-        fi
-    else
-        bin=$running_bin
-        etcd_running=1
-        summary_etcd_support="Yes"
-    fi
-
-    if [ -z "$bin" ]; then
-        echo "No etcd is running or installed in the system."
-        return 1
-    fi
-
-    etcd_version=$($bin --version | grep "etcd Version" | awk '{print $3}')
-    echo "etcd (version $etcd_version) is installed in $bin"
-
-    major=${etcd_version:0:1}
-    if [ $major -eq 2 ]; then
-        etcd_v2=1
-    elif [ $major -eq 3 ]; then
-        etcd_v3=1
-    fi
-}
-
-
 qemu_api_version=
 qemu_version=
 qemu_version_major=
@@ -324,7 +288,7 @@ function find_qemu_kvm {
     echo -e "\nSearching VM support ..."
     running_bin=$(ps -aux | grep -v grep | grep -w libvirtd | awk '{print $11}')
     if [ -z "$running_bin" ]; then
-        echo "libvirtd is not running. Please install libvirt-bin and start libvirtd before luanching Orion Server."
+        #echo "libvirtd is not running. Please install libvirt-bin and start libvirtd before luanching Orion Server."
         return 1
     fi
 
@@ -417,12 +381,15 @@ function check_controller_runtime {
     if [ "$1" == "server" ]; then
         config_path="/etc/orion/server.conf"
     else
-        config_path="/etc/orion/client.conf"
+        if [ -f ~/.orion/client.conf ]; then
+            echo "Using Orion Controller configuration in ~/.orion/client.conf"
+            config_path="~/.orion/client.conf"
+        else
+            echo "Using Orion Controller configuration in /etc/orion/client.conf"
+            config_path="/etc/orion/client.conf"
+        fi
     fi
 
-    echo -e "\nChecking Orion Controller status ..."
-    echo -e "\033[33m[Info] Orion Controller setting may be different in different SHELL.\033[0m"
-    echo -e "\033[33m[Info] Environment variable ORION_CONTROLLER has the first priority.\033[0m\n"
     controller_addr_env=$ORION_CONTROLLER
     controller_addr=
     if [ -r $config_path ]; then
@@ -440,11 +407,14 @@ function check_controller_runtime {
     target_addr=
     if [ -n "$controller_addr_env" ]; then
         target_addr=$controller_addr_env
-        echo "Environment variable ORION_CONTROLLER is set as ${controller_addr_env} Using this address to diagnose Orion Controller."
+        echo -e "\nEnvironment variable ORION_CONTROLLER is set as ${controller_addr_env} Using this address to diagnose Orion Controller."
     else
         target_addr=$controller_addr
-        echo "Orion Controller addrress is set as $controller_addr in configuration file. Using this address to diagnose Orion Controller"
+        echo -e "\nOrion Controller addrress is set as $controller_addr in configuration file. Using this address to diagnose Orion Controller"
     fi
+    echo -e "Checking Orion Controller ($target_addr) status ..."
+    echo -e "\033[33m[Info] Orion Controller setting may be different in different SHELL.\033[0m"
+    echo -e "\033[33m[Info] Environment variable ORION_CONTROLLER has the first priority.\033[0m\n"
 
     controller_ip=$(echo $target_addr | awk -F ':' '{print $1}')
     controller_port=$(echo $target_addr | awk -F ':' '{print $2}')
@@ -651,6 +621,17 @@ function check_oriond_runtime {
             fi
         fi
     else
+        user_name=$(ps -aux | grep -v grep | grep "oriond" | awk '{print $1}')
+        command_line=$(ps -aux | grep -v grep | grep "oriond" | awk '{for(i=11;i<=NF;i++){printf "%s ", $i}; printf "\n"}')
+        echo "Orion Server is running with Linux user   : $user_name"
+        echo "Orion Server is running with command line : $command_line"
+
+        myname=`whoami`
+        if [ $myname != $user_name -a $myname != "root" ]; then
+            echo -e "\033[33mCurrent user \"$myname\" do not have permission to check the Orion Server.\033[0m\n"
+            return 1;
+        fi
+
         pid=$(ps -aux | awk '{print $2,$11}' | grep -v grep | grep -w "oriond" | awk '{print $1}')
         pid_controller=$(strings /proc/${pid}/environ | grep ORION_CONTROLLER | awk -F '=' '{print $2}')
         if [ -n "$pid_controller" ]; then
@@ -675,11 +656,6 @@ function check_oriond_runtime {
 				cfg_enable_kvm=1
 			fi
 		fi
-
-        user_name=$(ps -aux | grep -v grep | grep "oriond" | awk '{print $1}')
-        command_line=$(ps -aux | grep -v grep | grep "oriond" | awk '{for(i=11;i<=NF;i++){printf "%s ", $i}; printf "\n"}')
-        echo "Orion Server is running with Linux user   : $user_name"
-        echo "Orion Server is running with command line : $command_line"
 
         cudart_path=$(ls -l /proc/${pid}/map_files | grep libcudart | awk '{print $11}' | head -n 1 | awk -F 'so.' '{print $2}')
         if [ -n "$cudart_path" ]; then
@@ -757,6 +733,7 @@ function check_oriond_runtime {
             echo "Testing the Orion Server network ..."
             if nc -zv $bind_ip $listen_port > /dev/null 2>&1; then
                 echo "Orion Server can be reached through $listen_addr"
+                echo ""
             else
                 echo "Orion Server can not be reached through $listen_addr"
                 echo "Please check the firewall setting."
@@ -775,7 +752,6 @@ if [ "$1" == "install" ]; then
         find_cudnn
         find_nvidia_gpu
         find_mps_support
-        find_etcd
         find_qemu_kvm
         find_docker
         check_server_install
@@ -788,7 +764,6 @@ if [ "$1" == "install" ]; then
         printf "%-40s [%s]\n" "CUDNN :" "$summary_cudnn_support"
         printf "%-40s [%s]\n" "NVIDIA GPU :" "$summary_nvidia_gpu_support"
         printf "%-40s [%s]\n" "NVIDIA CUDA MPS :" "$summary_nvidia_mps"
-        printf "%-40s [%s]\n" "etcd service :" "$summary_etcd_support"
         printf "%-40s [%s]\n" "QEMU-KVM environment :" "$summary_qemu_kvm_support"
         printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
         printf "%-40s [%s]\n" "Orion Server binary:" "$summary_server_support"
@@ -828,16 +803,10 @@ if [ "$1" == "install" ]; then
         printf "%-40s [%s]\n" "Docker container environment :" "$summary_docker_support"
     elif [ "$2" == "controller" ]; then
         check_os
-        find_etcd
 
         echo -e "\n==============================================="
         echo -e "Installation summaries :\n"
         printf "%-40s [%s]\n" "OS :" "$summary_os_support"
-        printf "%-40s [%s]\n" "etcd service :" "$summary_etcd_support"
-
-        if [ $summary_etcd_support == "No" ]; then
-            echo -e "\n\033[31mOrion Controller can not be installed in this environment.\033[0m"
-        fi
     else
         echo "Invalid parameters."
         print_help
@@ -849,8 +818,10 @@ elif [ "$1" == "runtime" ]; then
         find_mps_support
         check_oriond_runtime
         check_controller_runtime server
+        echo ""
     elif [ "$2" == "client" ]; then
         check_controller_runtime client
+        echo ""
     else
         echo "Invalid parameters."
         print_help

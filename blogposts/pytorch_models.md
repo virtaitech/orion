@@ -27,9 +27,9 @@ docker pull virtaitech/orion-client:pytorch-1.0.1-py3
 
 **在KVM虚拟机或者裸物理机运行PyTorch使用Orion vGPU**
 
-* 对于PyTorch 1.0.x 版本，用户运行`install-client`安装包安装Orion Client Runtime后即可支持。PyTorch可以直接从
+* 对于PyTorch 1.0.x 版本，PyTorch可以直接从官方pip源安装，用户运行`install-client`安装包安装Orion Client Runtime后即可支持。
 
-* 对于PyTorch 1.1.0 版本，我们目前要求用户从源码编译，以去掉部分组件依赖。用户可以参考根据[PyTorch 1.1.0 镜像文档](../dockerfiles/client-pytorch-1.1.0-py3/README.md)中介绍的步骤、编译参数，从源码编译一个依赖项更精简的PyTorch 1.1.0版本。
+* 对于PyTorch 1.1.0 版本，我们目前要求用户从源码编译，以去掉部分组件依赖。用户可以参考根据[PyTorch 1.1.0 镜像文档](../client-dockerfiles/client-pytorch-1.1.0-py3/README.md)中介绍的步骤、编译参数，从源码编译一个依赖项更精简的PyTorch 1.1.0版本。
 
 ## 支持情况
 Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorch 1.0.x和1.1.0版本。

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+ name: controller
+ labels:
+  name: controller
+spec:
+ restartPolicy: Never
+ hostNetwork: true
+ containers:
+ - name: controller
+   image: virtaitech/orion-controller:latest
+   imagePullPolicy: IfNotPresent
+   env:
+     - name : PORT
+       value : "9123"
+
