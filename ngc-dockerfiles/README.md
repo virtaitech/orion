@@ -10,8 +10,13 @@ NGC TensorFlow 基础镜像的详细资料可参见 https://docs.nvidia.com/deep
 
 为方便用户，我们选取了三个版本提供安装 Orion Client Runtime的Dockerfile。
 
+每个镜像中，我们安装了对应操作系统版本的MLNX OFED用户态驱动。
+
+此外，我们在/root目录下放置了一个 RNN toy example (`demo_story_RNN_code.py`)，以便快速测试。
+
 ### [Release 19.09](ngc-tf-19.09-py3)
 
+* OS: Ubuntu 18.04
 * CUDA: 10.1.243
 * CUDNN: 7.6.3
 * TensorFlow: 1.14.0
@@ -20,6 +25,7 @@ NGC TensorFlow 基础镜像的详细资料可参见 https://docs.nvidia.com/deep
 
 ### [Release 19.06](ngc-tf-19.06-py3)
 
+* OS: Ubuntu 18.04
 * CUDA: 10.1.168
 * CUDNN: 7.6.0
 * TensorFlow: 1.13.1
@@ -28,10 +34,24 @@ NGC TensorFlow 基础镜像的详细资料可参见 https://docs.nvidia.com/deep
 
 ### [Release 19.01](ngc-tf-19.01-py3)
 
+* OS: Ubuntu 16.04
 * CUDA: 10.0.130
 * CUDNN: 7.4.2
 * TensorFlow: 1.12.0
 
 需要安装 `install-client-10.0`
 
-容器中，我们安装了对应操作系统版本的MLNX OFED用户态驱动。此外，我们在容器内的/root目录下放置了一个 RNN toy example (`demo_story_RNN_code.py`)，以便快速测试。
+## NGC PyTorch
+
+NGC PyTorch 基础镜像可参见 https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/index.html
+
+我们在镜像中安装了对应操作系统版本的MLNX OFED用户态驱动。
+
+### [Release 19.09](ngc-torch-19.09-py3)
+
+* OS: Ubuntu 18.04
+* CUDA: 10.1.243
+* CUDNN: 7.6.3
+* PyTorch: 1.2.0
+
+需要安装 `install-client-10.1`
