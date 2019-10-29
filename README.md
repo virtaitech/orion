@@ -28,6 +28,12 @@ Orion vGPU软件用户手册
 
 # What's New
 
+* **2019/10/29** 增加 [PaddlePaddle 1.5 镜像](client-dockerfiles/client-cu10.0-paddle1.5-py3)
+
+    ```bash
+    docker pull virtaitech/orion-client:cu10.0-paddle1.5-py3
+    ```
+
 * **2019/10/25** CUDA 10.1 及多种框架支持，基于Kubernetes的全容器化部署方案，
 
     增加了对CUDA 10.1的支持：需要保证Orion Server运行的宿主机上安装有 CUDA 10.1 SDK。
@@ -59,14 +65,6 @@ Orion vGPU软件用户手册
     # Install Orion client runtime corresponding to CUDA version 10.0
     ./install-client-10.0
     ```
-
-    用户需要确保同时更新所有组件
-  
-  * `Orion Controller` 使用最新的`orion-controller`
-
-  * `Orion Server` 使用最新的安装包重新安装并启动
-  
-  * `Orion Client` 通过`docker pull`获取新版镜像，或者在裸机/KVM虚拟机上用最新的`install-client-x.y`重新安装。
 
 # Contact Us
 

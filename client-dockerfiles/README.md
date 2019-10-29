@@ -8,7 +8,7 @@
 
 ### 支持RDMA的TensorFlow镜像
 
-### [TensorFlow 1.13 带MNLX驱动，Python 3.5环境](./client-cu10.0-tf1.13-py3)
+### [TensorFlow 1.13 带MNLX驱动，Python 3.5 环境](./client-cu10.0-tf1.13-py3)
 
 ```bash
 docker pull virtaitech/orion-client:cu10.0-tf1.13-py3
@@ -20,7 +20,7 @@ docker pull virtaitech/orion-client:cu10.0-tf1.13-py3
 
 为了展示的方便，我们安装了 Juypter Notebook 和部分 Python packages。
 
-### [TensorFlow 1.12 带MNLX驱动，Python 3.5环境](./client-cu9.0-tf1.12-py3)
+### [TensorFlow 1.12 带MNLX驱动，Python 3.5 环境](./client-cu9.0-tf1.12-py3)
 
 ```bash
 docker pull virtaitech/orion-client:cu9.0-tf1.12-py3
@@ -37,7 +37,7 @@ docker pull virtaitech/orion-client:cu9.0-tf1.12-py3
 
 在我们的[一篇技术博客](../blogposts/pytorch_models.md)里，我们介绍了如何让 PyTorch 使用多块Orion vGPU在Imagenet数据集上训练Resnet50 模型。文中使用 GLOO 作为分布式训练的后端。后续我们会补充技术博客，介绍如何使用更高效的 NCCL 作为分布式训练的后端。
 
-### [PyTorch 1.1.0, Python 3.5环境](./client-cu9.0-torch1.1.0-py3)
+### [PyTorch 1.1.0, Python 3.5 环境](./client-cu9.0-torch1.1.0-py3)
 
 ```bash
 docker pull virtaitech/orion-client:cu9.0-torch1.1.0-py3
@@ -50,4 +50,16 @@ docker pull virtaitech/orion-client:cu9.0-torch1.1.0-py3
 最后，我们运行`install-client-9.0`安装包安装了Orion Client运行时。
 
 我们在[PyTorch 1.10 Python3.5 镜像](./client-cu9.0-torch1.1.0-py3)中介绍了我们编译PyTorch 1.1.0，TorchVision 0.3.0，以及安装Orion Client Runtime的步骤，用户可以参考。
+
+## PaddlePaddle 镜像
+
+### [PaddlePaddle 1.5, Python 3.5 环境](./client-cu10.0-paddle1.5-py3)
+
+```bash
+docker pull virtaitech/orion-client:cu10.0-paddle1.5-py3
+```
+
+我们从源码编译了 PaddlePaddle 1.5，保证动态链接到 CUDA Runtime 动态库。
+
+此外，我们将[『飞桨』深度学习框架入门教程](https://github.com/PaddlePaddle/book)克隆到 `/root/book` 目录下，并将相应数据集下载到容器内部。
 

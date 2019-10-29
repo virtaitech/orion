@@ -1,0 +1,6 @@
+pillow
+contextlib2
+lxml
+cython
+jupyter
+requests
