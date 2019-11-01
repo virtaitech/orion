@@ -21,12 +21,15 @@ Orion vGPU软件用户手册
 # <a id="tech-blog"></a>More
 我们通过若干技术博客，向用户展示更多的Orion vGPU软件使用场景。
 
+* [应用程序动态链接CUDA Runtime 库的简易编译方法](cuda-wrapper)
 * [使用k8s容器化部署Orion vGPU组件](orion-kubernetes-deploy)
 * [Kubernetes-Orion-Plugin 在k8s集群中调度vGPU资源](./doc/Orion-k8s-device-plugin.md)
 * [TensorFlow 使用Orion vGPU软件加速模型训练与推理](./blogposts/tensorflow_models.md)
 * [PyTorch 使用Orion vGPU软件加速模型训练与推理](./blogposts/pytorch_models.md)
 
 # What's New
+
+* **2019/11/1**  [应用程序动态链接CUDA Runtime 库的简易编译方法](cuda-wrapper)
 
 * **2019/10/29** 增加 [PaddlePaddle 1.5 镜像](client-dockerfiles/client-cu10.0-paddle1.5-py3)
 

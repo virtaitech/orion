@@ -5,4 +5,6 @@
 
 # PaddlePaddle 编译方法
 
-To be continued...
+由于CMake选项 `-DCUDA_USE_STATIC_CUDA_RUNTIME=OFF` 默认对 `third_party/warpCTC`并不生效，我们采用了替换`libcudart_static.a`的方法进行编译。
+
+参见 [应用程序动态链接CUDA Runtime 库的简易编译方法](../../cuda-wrapper)
