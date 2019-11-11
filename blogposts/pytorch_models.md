@@ -5,9 +5,9 @@
 我们推荐用户在我们准备的Orion Client容器内部运行PyTorch模型
 
 ```bash
-docker pull virtaitech/orion-client:pytorch-1.0.1-py3
-# (or use pytorch 1.1.0)
-# docker pull virtaitech/orion-client:pytorch-1.1.0-py3
+docker pull virtaitech/orion-client:cu9.0-torch1.1.0-py3
+# (or use CUDA 10.0)
+# docker pull virtaitech/orion-client:cu10.0-torch1.1.0-py3
 ```
 
 运行容器之前，用户需要保证Orion Controller和Orion Server正常运行。运行容器时，需要将`orion-shm`工具创建的`/dev/shm/orionsock<index>`挂载进容器内的同一路径。用户还需要设置正确的`ORION_CONTROLLER`环境变量。
@@ -42,7 +42,7 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
 
 本节中，我们介绍Orion vGPU对官方模型例子的支持情况。
 
-我们在提供的`virtaitech/orion-client:pytorch-1.1.0-py3`镜像中已经将官方模型例子放在了`/root/examples`目录下，用户可以进入其中每个模型子目录运行模型。
+我们在提供的`virtaitech/orion-client:cu9.0-torch1.1.0-py3`镜像中已经将官方模型例子放在了`/root/examples`目录下，用户可以进入其中每个模型子目录运行模型。
 
 * [DCGAN](https://github.com/pytorch/examples/tree/master/dcgan) 支持单块Orion vGPU
   
@@ -194,14 +194,14 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
 ```bash
 IMAGENET_DIR=/data/ImageNet_ILSVRC2012
 docker run -it --rm \
-    --shm-size 8G \
+    --ipc host \
     --net host \
     -v /dev/shm/orionsock0:/dev/shm/orionsock0:rw \
     -v $IMAGENET_DIR:/root/imagenet_dir \
     -e ORION_CONTROLLER=127.0.0.1:9123 \
     -e ORION_VGPU=4 \
     -e ORION_GMEM=7800 \
-    virtaitech/orion-client:pytorch-1.1.0-py3
+    virtaitech/orion-client:cu9.0-torch1.1.0-py3
 ```
 
 根据上一节所述，我们需要用GLOO作为后端运行模型：
