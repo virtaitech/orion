@@ -11,9 +11,7 @@
 因此，本文将不再提供step by step的使用范例，而是总结我们对TensorFlow模型的支持情况，并列举出经过我们大量测试的TensorFlow模型。
 
 ## 支持情况
-Orion vGPU软件对TensorFlow 1.8-1.12版本提供深度支持。
-
-由于对NVIDIA的多卡通讯计算库[NCCL](https://developer.nvidia.com/nccl)的支持还在积极开发中，因此依赖于NCCL进行多卡训练的模型目前只能使用单Orion vGPU进行训练。
+Orion vGPU软件对TensorFlow 1.8 - 1.4, TensorFlow 2.0 版本提供深度支持。
 
 其余TensorFlow模型均能正确高效地使用位于多物理GPU上的多块Orion vGPU进行训练和推理。
 
@@ -106,7 +104,6 @@ pip install tensorflow-gpu==1.12.0
 * [Cross-View Training](https://github.com/tensorflow/models/tree/r1.12.0/research/cvt_text) 根据论文["Semi-Supervised Sequence Modeling with Cross-View Training"](https://arxiv.org/abs/1809.08370)的内容，在CoNLL-2000数据集上利用GloVe词向量训练模型，完成sequence tagging和dependency parsing任务
 * [DeepSpeech 2](https://github.com/tensorflow/models/tree/r1.12.0/research/deep_speech) 在[OpenSLR LibriSpeech Corpus](http://www.openslr.org/12/)上训练DeepSpeech2模型
 
-    由于Orion vGPU对NCCL的支持还在积极开发中，目前只支持使用单张Orion vGPU训练DeepSpeech2模型
 * [KeypointNet](https://github.com/tensorflow/models/tree/r1.12.0/research/keypointnet) 训练论文["Discovery of Latent 3D Keypoints via End-to-end Geometric Reasoning"](https://arxiv.org/pdf/1807.03146.pdf)中的keypoint网络。
 * [NeuralGPU](https://github.com/tensorflow/models/tree/r1.12.0/research/neural_gpu) 根据论文["Neural GPUs Learn Algorithms"](https://arxiv.org/abs/1511.08228)训练Neural GPU，执行sort, kvsort, mul, search等任务
 

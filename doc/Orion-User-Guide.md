@@ -27,11 +27,14 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 * CUDA 9.1
 * CUDA 9.2
 * CUDA 10.0
-* CUDNN 7.2 以上
+* CUDA 10.1
+* CUDNN 7.4.2 及以上
 
 ## 深度学习框架
-* TensorFlow 1.8 至 1.13
-* Pytorch 1.0.1，Pytorch 1.1
+* TensorFlow 1.8 至 1.14，以及 TensorFlow 2.0
+* Pytorch 1.0.1，Pytorch 1.1, 1.2, 1.3
+* PaddlePaddle 1.5.2
+* NVCaffe
 
 ## 网络
 * TCP以太网络
@@ -50,10 +53,10 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 下面列出当前版本不支持的CUDA库、工具以及使用模式
 * 不支持CUDA应用程序使用Unified Memory
 * 不支持nvidia-smi工具
-* 不支持NCCL库，不支持OpenGL相关接口，不支持图形渲染相关接口
+* 不支持OpenGL相关接口，不支持图形渲染相关接口
 * 在使用Mellanox网卡的RDMA模式时，不支持Pytorch框架
 * 有限支持CUDA IPC，对部分程序可能不支持。
-* 需要从源码重新编译社区版的PyTorch 以保证动态链接 CUDA 库。
+* 需要从源码重新编译社区版的 PyTorch 以保证动态链接 CUDA 库。
 
 # 组件介绍
 

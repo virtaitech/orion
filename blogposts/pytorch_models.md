@@ -36,7 +36,6 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
 
 需要注意的是
 * Orion vGPU目前不支持PyTorch通过RDMA网络使用远程GPU资源
-* 使用多卡训练时，需要用GLOO作为后端，而不是默认的NCCL后端
 
 ## [PyTorch官方模型例子](https://github.com/pytorch/examples)
 
@@ -56,20 +55,29 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
                 ...
     ```
 
-    用户可以用`--dataset lfw --dataroot=path/to/celeba`参数使用解压后的数据集进行训练。由于我们暂时不能完全支持NCCL通信库，用户需要加上`--ngpu 1`参数指定使用一块Orion vGPU进行训练：
+    用户可以用`--dataset lfw --dataroot=path/to/celeba`参数使用解压后的数据集进行训练。我们用`--ngpu 1`参数指定使用一块Orion vGPU进行训练：
     ```bash
     python3 main.py --dataset lfw --dataroot /path/to/celeba --cuda --ngpu 1
     ```
+
+    若需使用多卡训练，请参见 Imagenet 例子中配置 NCCL 的方法。
 
 * [Neural Stype Transfer](https://github.com/pytorch/examples/tree/master/fast_neural_style) 支持
 
     用户应当用`--cuda 1`参数指定使用Orion vGPU训练模型。否则，模型会用CPU训练。
 
 * [Imagenet](https://github.com/pytorch/examples/tree/master/imagenet) 支持使用GLOO后端进行多Orion vGPU上的模型训练
-  
-    当用户设置`ORION_VGPU`值大于1时，PyTorch默认使用NCCL后端进行多卡训练，而Orion vGPU软件暂时不支持NCCL通信计算库。因此，如果用户只想用单Orion vGPU进行训练，应当在运行`main.py`时明确指定：
+    
+    如果用户只想用单Orion vGPU进行训练，应当在运行`main.py`时明确指定：
     ```bash
     python3 main.py --arch resnet50 --batch-size 128 --gpu 0 $IMAGENET_DIR
+    ```
+
+    当用户设置`ORION_VGPU`值大于1时，PyTorch默认使用NCCL后端进行多卡训练，为此运行 Orion Server 的宿主机上需要安装NCCL，并在 `/etc/orion/server.conf`中加上：
+
+    ```bash
+    [server-nccl]
+        comm_id = "127.0.0.1:23333"
     ```
 
     如果用户需要使用多Orion vGPU进行训练，应当指定使用Facebook [GLOO](https://github.com/facebookincubator/gloo)后端。以使用2块Orion vGPU为例：
@@ -78,7 +86,7 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     python3 main.py --arch resnet50 \
         --batch-size 256 \
         --multiprocessing-distributed \
-        --dist-backend gloo \
+        --dist-backend nccl \
         --dist-url file:///tmp/sharedfile \
         --world-size 1 \
         --rank 0 \
@@ -88,7 +96,6 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     上述命令中，
     * `--world-size 1 --rank 0`表示在每个Orion vGPU上都会启动一个向Orion vGPU发送CUDA API请求的工作进程
     * `--batch-size 256`是两块Orion vGPU上的总batch_size，因此单卡的batch_size为128
-    * `--dist-backend gloo`表明使用GLOO作为多卡训练的通信计算后端
     * `--dist-url file:///tmp/sharedfile`指GLOO启动的每个工作进程之间初始化时用`/tmp/sharedfile`文件进行交互metadata。用户也可以选择TCP方式进行。
 
     如果用户克隆的pytorch examples repo版本较旧，需要将`$IMAGENET_DIR`改为`--data $IMAGENET_DIR`。
@@ -96,7 +103,6 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     **需要注意的是**，启动容器时一定要带上[本文开头](#run-container)所介绍的参数
     ```bash
     --ipc=host
-    # (or) --shm-size=8G
     ```
     以保证容器内部的DataLoader Worker进程之间可以通过共享内存交换数据。
 
@@ -109,6 +115,7 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     默认会训练10个epochs。
 
 * [MNIST Hogwild](https://github.com/pytorch/examples/tree/master/mnist_hogwild) 暂不支持，对CUDA IPC的全面支持还在开发阶段。
+
 * [Linear Regression](https://github.com/pytorch/examples/tree/master/regression) 支持
 
     ```bash
@@ -141,13 +148,11 @@ Orion vGPU对PyTorch的支持还在持续开发中。目前，我们支持PyTorc
     python3 main.py
     ```
 
-* [Super Resolution](https://github.com/pytorch/examples/tree/master/super_resolution) ~~提供的容器内不支持~~提供的PyTorch 1.1.0镜像不支持，因为编译PyTorch时没有带上Lapack支持。
-
-    **Update 2019/07/08** 用户可以在我们提供的PyTorch 1.0.1镜像中运行这个例子：
+* [Super Resolution](https://github.com/pytorch/examples/tree/master/super_resolution)
 
     ```bash
     # Train 100 epochs
-    python3 main.py --upscale_factor 3 --batchSize 4 --testBatchSize 100 --nEpochs 100 --lr 0.001
+    python3 main.py --upscale_factor 3 --batchSize 4 --testBatchSize 100 --nEpochs 100 --lr 0.001 --cuda
 
     # Super Resolution
     python3 super_resolve.py --input_image dataset/BSDS300/images/test/16077.jpg --model model_epoch_500.pth --output_filename out.png
@@ -204,7 +209,12 @@ docker run -it --rm \
     virtaitech/orion-client:cu9.0-torch1.1.0-py3
 ```
 
-根据上一节所述，我们需要用GLOO作为后端运行模型：
+根据上一节所述，运行 Orion Server 的宿主机上需要安装NCCL，并在  `/etc/orion/server.conf` 中加上：
+
+```bash
+[server-nccl]
+    comm_id = "127.0.0.1:23333"
+```
 
 ```bash
 # (git clone pytorch models repo)
@@ -215,7 +225,7 @@ cd examples/imagenet
 python3 main.py --arch resnet50 \
     --batch-size 256 \
     --multiprocessing-distributed \
-    --dist-backend gloo \
+    --dist-backend nccl \
     --dist-url file:///tmp/sharedfile \
     --world-size 1 \
     --rank 0 \
