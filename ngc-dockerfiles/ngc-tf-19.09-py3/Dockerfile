@@ -18,17 +18,16 @@ RUN tar xvf MLNX_OFED_LINUX-4.7-1.0.0.1-ubuntu18.04-x86_64.tgz &&\
     cd /tmp && rm -rf *
 
 # Install Orion Client
-WORKDIR /root
+WORKDIR /opt
 COPY install-client-10.1 .
-RUN chmod +x install-client-10.1 && ./install-client-10.1 -q && rm install-client-10.1
+RUN chmod +x install-client-10.1 && ./install-client-10.1 -q
 ENV LD_LIBRARY_PATH=/usr/lib/orion
-# Allow log to appear on screen
-RUN sed -i 's/log_to_screen = 0/log_to_screen = 1/g' /etc/orion/client.conf
 
 # Set default ORION_VGPU for each process requesting vgpu resources
 ENV ORION_VGPU 1
 ENV ORION_GMEM 4096
 
+WORKDIR /root
 # A toy RNN model (sequence classification)
 COPY demo_story_RNN_code.py .
 

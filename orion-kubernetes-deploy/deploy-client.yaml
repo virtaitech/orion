@@ -8,12 +8,12 @@ spec:
   hostIPC: true
   containers:
   - name: orion-client
-    image: virtaitech/orion-client/cu90-tf1.12-py3
+    image: virtaitech/orion-client:cu10.0-tf1.13-py3
     imagePullPolicy: IfNotPresent
     securityContext:
       privileged: false
     command: ["bash", "-c"]
-    args: ["cd cuda9.0-regression/cuda_samples/vectorAdd; ./vectorAdd"]
+    args: ["cd cuda10.0-regression/cuda_samples/vectorAdd; ./vectorAdd"]
     resources:
       limits:
         virtaitech.com/gpu: 1  

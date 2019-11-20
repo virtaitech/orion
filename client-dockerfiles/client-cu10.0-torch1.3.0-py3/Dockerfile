@@ -13,7 +13,7 @@ RUN apt update -y &&\
 
 # MLNX user mode driver
 WORKDIR /tmp
-RUN wget http://content.mellanox.com/ofed/MLNX_OFED-4.5-1.0.1.0/MLNX_OFED_LINUX-4.5-1.0.1.0-ubuntu16.04-x86_64.tgz
+COPY MLNX_OFED_LINUX-4.5-1.0.1.0-ubuntu16.04-x86_64.tgz .
 RUN tar xvf MLNX_OFED_LINUX-4.5-1.0.1.0-ubuntu16.04-x86_64.tgz &&\ 
     cd MLNX_OFED_LINUX-4.5-1.0.1.0-ubuntu16.04-x86_64 &&\ 
     ./mlnxofedinstall --user-space-only --without-fw-update --all --force -q &&\ 
@@ -29,11 +29,16 @@ index-url=https://pypi.doubanio.com/simple/ \n\
 trusted-host=pypi.doubanio.com \n\
 " > /etc/pip.conf
 
+RUN apt update && apt install -y libopenblas-base && apt clean
+
+RUN pip3 install --upgrade pip
+
 # Install PyTorch, torchvision and other python packages
 WORKDIR /opt
-COPY torch-1.1.0-cp35-cp35m-linux_x86_64.whl .
-RUN pip3 install torch-1.1.0-cp35-cp35m-linux_x86_64.whl
-COPY torchvision /usr/local/lib/python3.5/dist-packages/torchvision
+COPY torch-1.3.0a0+ee77ccb-cp35-cp35m-linux_x86_64.whl .
+RUN pip3 install torch-1.3.0a0+ee77ccb-cp35-cp35m-linux_x86_64.whl
+COPY torchvision-0.4.2-cp35-cp35m-linux_x86_64.whl .
+RUN pip3 install torchvision-0.4.2-cp35-cp35m-linux_x86_64.whl
 COPY requirement.txt .
 RUN pip3 install -r requirement.txt && rm requirement.txt
 
@@ -42,15 +47,18 @@ RUN sed -i "s/multiprocessing.get_context('spawn')/multiprocessing.get_context('
 
 # Prepare PyTorch examples
 WORKDIR /root
-RUN git clone https://github.com/pytorch/examples.git
-# Also package the processed MNIST data
-# COPY data examples/data
+COPY examples /root/examples
 
 # Install Orion Client runtime
 WORKDIR /opt
-COPY install-client-9.0 .
-RUN chmod +x install-client-9.0 && ./install-client-9.0 -q
-ENV LD_LIBRARY_PATH=/usr/lib/orion
+COPY install-client-10.0 .
+RUN chmod +x install-client-10.0 && ./install-client-10.0 -q
+
+# Configurate client to use ibverbs
+# COPY client.conf /etc/orion/client.conf
+
+# For internal usage, put the oriond inside the container
+COPY oriond .
 
 # Set the num of Orion vGPU each process requests from Orion Controller
 ENV ORION_VGPU=1

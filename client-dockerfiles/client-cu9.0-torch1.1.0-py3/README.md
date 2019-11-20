@@ -1,20 +1,14 @@
-# PyTorch 1.10 Python3.5 镜像
+## 说明
 
-## 注意事项
-由于PyTorch DataLoader需要通过IPC通讯，启动容器时需要通过`--shm-size=8G`参数保证DataLoader可以正常工作。这一点对于Native环境也是一样的。
+我们将构建镜像时使用的 PyTorch 安装包 `torch-1.1.0-cp35-cp35m-linux_x86_64.whl`，以及编译好的 `torchvision` 放到镜像 `virtaitech/orion-client:cu9.0-torch1.1.0-py3` 中的 `/opt`目录，此目录下还放置了 `oriond` 和 `install-client-9.0`。
 
-此外，由于我们对PyTorch的支持还在持续开发中，用户需要注意的是：
-* 通过RDMA网络使用远程GPU资源时，我们需要采用 Distributed Training 模式，并使用 NCCL 作为后端。
+如果要构建镜像，用户需要按照下面的步骤从源码编译 PyTorch 和 TorchVision。
 
-在我们的[一篇技术博客](../../blogposts/pytorch_models.md)里，我们介绍了如何让PyTorch使用多块Orion vGPU在Imagenet数据集上训练Resnet50模型。
-
-如果要构建镜像，用户需要按照下面的步骤从源码编译PyTorch和TorchVision。
-
-## 从源码编译PyTorch 1.1.0
+### 从源码编译PyTorch 1.1.0
 
 为了确保 PyTorch 动态链接 CUDA 和 NCCL，我们需要从源码开始，设置合理的编译选项以编译 PyTorch。
 
-我们以Ubuntu 16.04环境为例。
+我们以 Ubuntu 16.04 环境为例。
 
 首先`git clone`相应的repo，以及第三方依赖项：
 
@@ -69,7 +63,7 @@ python3 setup.py bdist_wheel
 
 用户可以在生成的`dist`目录下，找到生成的`torch-1.1.0-cp35-cp35m-linux_x86_64.whl`。
 
-## 从源码编译TorchVision 0.3.0
+### 从源码编译TorchVision 0.3.0
 
 最新（2019/06/29）的TorchVision 0.3.0和PyTorch 1.1.0相匹配。从源码 build PyTorch之后，TorchVision 也需要重新build。
 
@@ -99,9 +93,4 @@ datasets                            models       transforms  version.py
 ```bash
 COPY torchvision /usr/local/lib/python3.5/dist-packages/torchvision
 ```
-
-## 最后步骤
-
-在运行`docker build`之前，用户需要把`install-client-9.0`安装包，以及上面两步得到的PyTorch wheel包，以及TorchVision都放到Dockerfile所在路径下。
-
 

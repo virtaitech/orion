@@ -4,6 +4,8 @@
 
 以 TensorFlow 为例，NGC容器中的版本修改了源码并编译，以使用 cuDNN 的较新版本的 API。只需在NGC容器中运行 Orion Client Runtime安装包，无需对TF框架进程修改或编译，即可使用Orion vGPU资源。
 
+除了支持 NGC TensorFlow ，我们同样支持 NGC PyTorch 和 NGC NVCaffe。
+
 ## NGC TensorFlow
 
 NGC TensorFlow 基础镜像的详细资料可参见 https://docs.nvidia.com/deeplearning/frameworks/tensorflow-release-notes/index.html
@@ -53,5 +55,20 @@ NGC PyTorch 基础镜像可参见 https://docs.nvidia.com/deeplearning/framework
 * CUDA: 10.1.243
 * CUDNN: 7.6.3
 * PyTorch: 1.2.0
+
+需要安装 `install-client-10.1`
+
+## NGC NVCaffe
+
+NGC NVCaffe 基础镜像可参见 https://docs.nvidia.com/deeplearning/frameworks/caffe-release-notes/index.html
+
+我们在镜像中安装了对应操作系统版本的MLNX OFED用户态驱动。
+
+### [Release 19.05](ngc-caffe-19.05-py3)
+
+* OS: Ubuntu 16.04
+* CUDA: 10.1
+* CUDNN: 7.6.0
+* NVCaffe: 0.17.3
 
 需要安装 `install-client-10.1`

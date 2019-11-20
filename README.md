@@ -37,6 +37,8 @@ Orion vGPU软件用户手册
 
     支持 TF 2.0, PyTorch 1.3, NVCaffe 深度学习框架
 
+    支持 [NCCL](https://developer.nvidia.com/nccl) 2.4.x 作为多卡训练的后端
+
 * **2019/11/1**  [应用程序动态链接CUDA Runtime 库的简易编译方法](cuda-wrapper)
 
 * **2019/10/29** 增加 [PaddlePaddle 1.5 镜像](client-dockerfiles/client-cu10.0-paddle1.5-py3)

@@ -22,22 +22,20 @@ RUN tar xvf MLNX_OFED_LINUX-4.5-1.0.1.0-ubuntu16.04-x86_64.tgz &&\
 
 # Configurate pip source
 COPY pip.conf /etc/
-
 # Install Python packages
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt && rm requirements.txt
-
 # Install TensorFlow 1.12 GPU version
 RUN pip3 install tensorflow-gpu==1.12.0
 
-WORKDIR /root
-
 # Clone TF official benchmark
+WORKDIR /root
 RUN git clone https://github.com/tensorflow/benchmarks.git --branch=cnn_tf_v1.12_compatible
 
 # Install Orion Client runtime
+WORKDIR /opt
 COPY install-client-9.0 .
-RUN chmod +x install-client-9.0 && ./install-client-9.0 -q && rm install-client-9.0
+RUN chmod +x install-client-9.0 && ./install-client-9.0 -q
 ENV LD_LIBRARY_PATH=/usr/lib/orion
 
 # Set default ORION_VGPU for each process requesting vgpu resources

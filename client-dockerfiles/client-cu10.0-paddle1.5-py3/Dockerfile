@@ -43,10 +43,9 @@ RUN cd book/08.machine_translation && sed -i 's/use_cuda = False/use_cuda = True
 # COPY dataset .cache/paddle/dataset
 
 # Install Orion Client runtime
+WORKDIR /opt
 COPY install-client-10.0 .
-RUN chmod +x install-client-10.0 && ./install-client-10.0 -q && rm install-client-10.0
-# Allow log to appear on screen
-RUN sed -i 's/log_to_screen = 0/log_to_screen = 1/g' /etc/orion/client.conf
+RUN chmod +x install-client-10.0 && ./install-client-10.0 -q
 
 # Set default ORION_VGPU for each process requesting vgpu resources
 ENV ORION_VGPU 1
