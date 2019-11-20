@@ -2,14 +2,17 @@
 [server]
     listen_port = 9960
     bind_addr = 127.0.0.1
+    enable_kvm = "false"
     enable_shm = "true"
     enable_rdma = "false"
-    enable_kvm = "false"
     vgpu_count = 4
+
+[server-nccl]
+    comm_id = "127.0.0.1:9970"
 
 [server-log]
     log_with_time = 1
-    log_to_screen = 1
+    log_to_screen = 0
     log_to_file = 1
     log_level = INFO
     file_log_level = INFO
@@ -18,8 +21,7 @@
     shm_path_base = "/dev/shm/"
     shm_group_name = "kvm"
     shm_user_name = "libvirt-qemu"
-    shm_buffer_size = 134217728
+    shm_buffer_size = 128
 
 [controller]
-    controller_addr = 127.0.0.1:9123
-    
+	controller_addr = 127.0.0.1:9123

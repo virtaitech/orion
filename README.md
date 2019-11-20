@@ -28,6 +28,14 @@ Orion vGPU软件用户手册
 * [PyTorch 使用Orion vGPU软件加速模型训练与推理](./blogposts/pytorch_models.md)
 
 # What's New
+* **2019/11/20** 简化本地容器使用共享内存加速的配置，支持更多库和框架
+
+    配置简化：本地容器不需要挂载 /dev/shm/orionsock 共享内存 （**要求 host IPC 权限**）
+
+    * 对于 `docker run` 启动的容器，要求指定 `--ipc host` 参数
+    * 对于由 Kubernetes 启动的容器，需要在 yaml 配置文件中指定 `hostIPC: true`
+
+    支持 TF 2.0, PyTorch 1.3, NVCaffe 深度学习框架
 
 * **2019/11/1**  [应用程序动态链接CUDA Runtime 库的简易编译方法](cuda-wrapper)
 
@@ -39,18 +47,9 @@ Orion vGPU软件用户手册
 
 * **2019/10/25** CUDA 10.1 及多种框架支持，基于Kubernetes的全容器化部署方案，
 
-    增加了对CUDA 10.1的支持：需要保证Orion Server运行的宿主机上安装有 CUDA 10.1 SDK。
+    支持 CUDA 10.1，支持 TF 1.14，PyTorch 1.2, Kaldi 5.3, PaddlePaddle 1.5.2
 
-    支持 TF 1.14，PyTorch 1.2, Kaldi 5.3, PaddlePaddle 1.5.2
-
-    [Orion vGPU基于Kubernetes的全容器化部署](orion-kubernetes-deploy)
-
-    * 各组件的 Docker 容器镜像
-      
-      * virtaitech/orion-controller:latest
-      * virtaitech/orion-plugin:latest
-      * virtaitech/orion-server:cu9.0
-      * virtaitech/orion-server:cu10.0
+    提供 [Orion vGPU基于Kubernetes的全容器化部署](orion-kubernetes-deploy) 方案
     
     支持 [NVIDIA GPU Container (NGC)](https://ngc.nvidia.com/catalog/containers?orderBy=modifiedDESC&query=&quickFilter=containers&filters=)
 
@@ -62,12 +61,7 @@ Orion vGPU软件用户手册
     
     对多版本的支持既不需要设置`/usr/local/cuda`软链接，也不需要设置环境变量。
     
-    Orion Client端，取决于用户程序的需求，需要安装对应于不同CUDA版本的Orion Client Runtime：
-
-    ```bash
-    # Install Orion client runtime corresponding to CUDA version 10.0
-    ./install-client-10.0
-    ```
+    Orion Client端，取决于用户程序的需求，需要安装对应于不同CUDA版本的 Orion Client Runtime。
 
 # Contact Us
 

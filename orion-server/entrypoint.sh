@@ -42,7 +42,7 @@ cat > /etc/orion/server.conf <<  EOF
     shm_path_base = "/dev/shm/"
     shm_group_name = "kvm"
     shm_user_name = "libvirt-qemu"
-    shm_buffer_size = 134217728
+    shm_buffer_size = 128
 
 [controller]
     controller_addr = $controller_addr
