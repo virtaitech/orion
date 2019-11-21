@@ -4,7 +4,6 @@ controller:
   log_level: info
   # log_file: if null, log will output to STDOUT
   log_file: "log"
-  vgpu_num: 4
   authentication:
     client-key: 
     server-key:     

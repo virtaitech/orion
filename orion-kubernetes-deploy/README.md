@@ -96,8 +96,9 @@ kubectl create -f deploy-server-cuda10.0.yaml
 ```bash
 kubectl create -f deploy-client.yaml
 ```
-
 默认将运行CUDA Samples中的`vectorAdd`。
+
+**注意：Client 容器如果需要通过共享内存加速使用本地vGPU，Client yaml 文件中一定要配置 `hostIPC: true`，否则会回退到 TCP 模式，性能将有损失。**
 
 ### 配置选项
 

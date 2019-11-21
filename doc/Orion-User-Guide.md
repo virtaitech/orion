@@ -12,36 +12,35 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 * x86_64
 
 ## 操作系统
-* 64位 Ubuntu 16.04 LTS，64位 Ubuntu 14.04 LTS
+* 64位 Ubuntu 18.04 LTS，16.04 LTS, 14.04 LTS
 * 64位 CentOS 7.x
 
-## NVidia GPU
-* Nvidia K40，Nvidia K80
-* Nvidia P4，Nvidia P40，Nvidia P100
-* Nvidia V100
-* Nvidia T4
-* Nvidia GeForce GTX 1060，Nvidia GeForce GTX 1080，Nvidia GeForce GTX 1080 Ti，Nvidia GeForce GTX 2080 Ti
+## NVIDIA GPU
+* NVIDIA T4, RTX 2080 Series
+* NVIDIA V100
+* NVIDIA P100, P40, P4, GTX 1080 Series, GTX 1060 Series
+* Nvidia K80，Nvidia K40
 
-## NVidia CUDA
-* CUDA 9.0
-* CUDA 9.1
-* CUDA 9.2
-* CUDA 10.0
+## NVIDIA CUDA
 * CUDA 10.1
+* CUDA 10.0
+* CUDA 9.2
+* CUDA 9.1
+* CUDA 9.0
 * CUDNN 7.4.2 及以上
 
 ## 深度学习框架
-* TensorFlow 1.8 至 1.14，以及 TensorFlow 2.0
-* Pytorch 1.0.1，Pytorch 1.1, 1.2, 1.3
+* TensorFlow 2.0, TensorFlow 1.8 - 1.14
+* Pytorch 1.0 - 1.3
 * PaddlePaddle 1.5.2
 * NVCaffe
 
 ## 网络
-* TCP以太网络
 * Mellanox Connect-X4 RoCE，Mellanox Connect-X5 RoCE
+* TCP以太网络
 
 ## 容器环境
-* Docker 1.13及以后版本
+* Docker 1.13 及以后版本
 
 ## 虚拟化环境
 * QEMU-KVM (QEMU 2.x)
@@ -51,12 +50,12 @@ Orion vGPU软件是一个为云或者数据中心内的AI应用，CUDA应用提�
 
 # 已知问题
 下面列出当前版本不支持的CUDA库、工具以及使用模式
-* 不支持CUDA应用程序使用Unified Memory
-* 不支持nvidia-smi工具
+* 不支持CUDA应用程序使用 Unified Memory
+* 不支持 nvidia-smi 工具
 * 不支持OpenGL相关接口，不支持图形渲染相关接口
 * 在使用Mellanox网卡的RDMA模式时，不支持Pytorch框架
 * 有限支持CUDA IPC，对部分程序可能不支持。
-* 需要从源码重新编译社区版的 PyTorch 以保证动态链接 CUDA 库。
+* 部分应用需要从源码重新编译以保证动态链接 CUDA 库。
 
 # 组件介绍
 
@@ -95,32 +94,53 @@ Orion Client端可以部署在本地物理机上，Container里，或者VM里，
 
 # 安装部署
 
+本文介绍在宿主机上部署 Orion vGPU 软件各组件的方法。
+
+有需求的读者也可以参考 [基于 Kubernetes 的全容器化部署方案](../orion-kubernetes-deploy)。
+
+我们假定读者已经将 [GitHub repo](https://github.com/virtaitech/orion) 克隆到了本地：
+
+```bash
+git clone https://github.com/virtaitech/orion
+
+cd orion
+```
+
 ## 部署Orion Controller
 ### 环境依赖
-* Linux Centos 7.x 或者 Ubuntu 14.04 及以上版本
+* Linux Centos 7.x / Ubuntu 14.04 LTS 及以上版本
 
 ### 启动Orion Controller服务
 
-把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.1.1 为例。通过以下的命令可以启动Orion Controller服务。
 ```
-/root/Orion-1.1.1/orion-controller start
+cd orion-controller
+
+./orion-controller start --config-file controller.yaml
 ```
 
 ### 配置Orion Controller服务
-Orion Controller通过启动参数支持不同的配置选项。orion-controller start 命令支持的参数有
+Orion Controller 在配置文件 `controller.yaml` 中接受以下参数：
 
-    -i          绑定服务于指定IP地址。默认值为 "0.0.0.0"
-    -p          服务监听端口。默认值为 9123
-    --log-level 日志的级别。支持 [debug|info|warn|error] 四种级别。默认值为 "info"
-    --log       日志文件的输出路径。默认为输出到标准输出
-    --vgpu      每个物理GPU切分为多少个vGPU。默认值为 4。允许的合法范围为大于等于1的自然数
+  - listen_ip: 建议监听在 0.0.0.0 上，以适应各种网络环境
+  - listen_port: 监听端口，默认为 9123
+  - log_file: 日志文件，如果设为 "null" 字符串，日志将输出到屏幕
+
+此外，配置文件中的 database 部分可以配置 Orion Controller 自带 etcd 数据库的存储路径，以及服务的URL及端口。当用户环境中已经有 etcd 服务（例如 k8s 集群中）时，为了不与现有服务冲突，用户可以根据情况修改这些配置。
 
 ## 部署Orion Server
 
-### 环境依赖
-* NVIDIA CUDA 9.0, 9.1, 9.2, 10.0
-* NVIDIA CUDNN 7.2以上版本
-* g++ 4.8或以上版本，libcurl，openssl
+### 宿主机环境依赖
+* NVIDIA CUDA SDK 9.0, 9.1, 9.2, 10.0, 10.1
+* NVIDIA CUDNN 7.4.2 以上版本，推荐 7.6.x
+* g++ 4.8.5 或以上版本，libcurl，openssl, libibverbs
+
+#### 多版本 CUDA SDK 共存
+
+Orion Server 要求 CUDA 安装在宿主机默认路径（即 `/usr/local/cuda-x.y`）下面。
+
+Orion Server 支持宿主机上多 CUDA 版本共存，只要它们均安装在默认路径即可。例如，当 CUDA 9.0, CUDA 10.0 共存时，`/usr/local` 目录下应该有 `cuda-9.0` 和 `cuda-10.0` 这两个目录。
+
+此外，多 CUDA 版本共存时，不需要设置 `CUDA_HOME`，`LD_LIBRARY_PATH` 等环境变量，也不依赖于部分用户环境中存在的软链接 `/usr/local/cuda => /usr/local/cuda-x.y`，这是因为 Orion Server 可以根据 Orion Client 环境中实际安装的 Runtime 对应于 CUDA 的版本号，动态选择合适的 CUDA SDK 版本。
 
 ### 可选依赖
 根据支持不同使用场景，对不同软件的依赖包括：
@@ -128,38 +148,47 @@ Orion Controller通过启动参数支持不同的配置选项。orion-controller
 * 本地虚拟机支持：libvirt >= 1.3，QEMU >= 2.0
 
 ### 软件安装
-把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.1.1 为例。通过以下的命令安装Orion Server服务。
+
 ```
-sudo /root/Orion-1.1.1/orion-server/install-server.sh
+cd orion-server
+
+sudo ./install-server.sh
 ```
 
+安装脚本会将 Orion Server 注册成由 systemctl 管理的系统服务。
+
 ### 配置Orion Server
-大部分配置均可使用默认配置，少量配置需要根据使用场景进行编辑配置   
-编辑配置文件 /etc/orion/server.conf  
-* controller_addr：Orion Controller的IP地址
+大部分配置均可使用默认配置，少量配置需要根据使用场景进行编辑配置
+
+编辑配置文件 `/etc/orion/server.conf`
+
+* controller_addr：Orion Controller 的IP地址
     * 对于上述本地GPU虚拟化方案，可以试用本地回环地址，例如为 127.0.0.1:9123
     * 对于上述的分布式GPU资源池化方案，则应该是Orion Controller在整个局域网的可访问地址
-* bind_addr：修改为Orion Server的data plane的IP地址。
+
+* bind_addr：Orion Server 的 data plane 的IP地址。
     * 对于上述本地GPU虚拟化方案，如果目标支持Docker Container，则应该是Docker虚拟网络的网关地址。通常为docker0网络接口的IP地址。如果目标支持VM，则应该是VM的虚拟网关的本机IP地址。
     * 对于上述的分布式GPU资源池化方案，如果仅具备TCP以太网网卡，则该地址为TCP以太网网卡的IP地址。如果配置试用RDMA网络，则配置为RDMA网卡的IP地址。
+
 * enable_shm：启用基于共享内存的通讯加速机制
     * 对于上述本地GPU虚拟化方案，如果目标应用程序运行在Docker Container或者QEMU-KVM的VM里，则设为true。否则设置为false
     * 对于上述的分布式GPU资源池化方案，设置为false
     * 更多关于基于共享内存的通讯加速的内容请看看章节 “SHM通讯加速”
-* enable_rdma：RDMA使能开关
+
+* enable_rdma：RDMA 开关
     * 对于上述本地GPU虚拟化方案，设置为false
     * 对于上述的分布式GPU资源池化方案，如果本机具备RDMA网络条件，则配置为true，否则为false
+
 * enable_kvm：支持QEMU-KVM的VM
     * 对于上述本地GPU虚拟化方案，如果目标应用程序运行在QEMU-KVM的VM里，则设置为true，否则为false
     * 对于上述的分布式GPU资源池化方案，设置为false
+
 * vgpu_count：每个物理GPU切片为多少个vGPU
     * 该参数合法的取值是1~100的任意整数
     * 该参数会影响到默认每个vGPU的显存大小
 
-如需在安装之后改变CUDA的安装路径设置，则需要编辑文件 /etc/systemd/system/oriond.service。把其中的LD_LIBRARY_PATH变量和PATH变量的路径更改。更改后用如下命令重载配置
-```
-sudo systemctl reload oriond
-```
+* comm_id: 支持 NCCL 所需要的端口
+
 ### 启动Orion Server
 通过如下命令可以启动Orion Server
 ```
@@ -177,29 +206,41 @@ sudo journalctl -u oriond       ## 查看Orion Server的服务日志
 
 ### Orion Server日志
 Orion Server的日志分为系统日志和用户日志两类
-* Orion Server系统日志位于/var/log/orion/server.log。记录Orion Server的服务日志。
-* Orion Server用户日志位于/var/log/orion/session/目录。每次CUDA应用运行均会在该目录产生一个对应于该次任务的日志文件。
+* Orion Server系统日志位于 `/var/log/orion/server.log`。记录Orion Server的服务日志。
+* Orion Server用户日志位于 `/var/log/orion/session/` 目录。每次CUDA应用运行均会在该目录产生一个对应于该次任务的日志文件。
 
-## 部署Orion Client
+## 部署 Orion Client
 
 ### 环境依赖
-* g++ 4.8或以上版本，libcurl，openssl，libuuid
+* g++ 4.8.5 或以上版本，libcurl，openssl，libuuid
 
 ### 可选依赖
 * RDMA支持：MLNX_OFED_LINUX-4.5驱动及用户库
 
 ### 软件安装
-把Orion安装包内的`install-client-x.y` (根据所需CUDA版本选择对应的installer，例如`install-client-10.0`支持CUDA 10.0 )拷贝至目标环境，并以Root权限运行。
+
+**注：建议在容器或虚拟机中安装，或者在没有 GPU 环境的物理机上安装，以免破坏本地的 CUDA 环境**
+
+把Orion安装包内的`install-client-x.y` (根据所需 CUDA 版本选择对应的 installer，例如`install-client-10.0` 对应于 CUDA 10.0)拷贝至目标环境，并以Root权限运行。
 
 ``` bash
 sudo ./install-client-x.y
 ```
-上述命令把Orion Client环境安装至默认路径 /usr/lib 中。可以通过其他安装选项进行安装
 
-    -d  指定安装路径。默认值为 /usr/lib
+上述命令把 Orion Client 环境安装至默认路径 `/usr/lib/orion` 中，并通过 `ldconfig` 机制将 `/usr/lib/orion` 添加到系统动态库搜索路径。
+
+此外，可以指定其它安装选项进行安装
+
+    -d  指定安装路径。默认值为 `/usr/lib/orion`
     -q  静默安装。安装过程中跳过输入提示
 
-**如果安装在非默认系统动态库搜索路径当中，则需要在运行CUDA应用程序之前，通过LD_LIBRARY_PATH环境变量把Oroin Client的安装路径加入到动态库搜索路径中。**
+无论是否默认安装，由于 `LD_LIBRARY_PATH` 的优先级高，我们建议用户设置
+
+```bash
+export LD_LIBRARY_PATH=<installation-path>
+```
+
+以确保应用程序链接到 Orion Client Runtime。
 
 ### 配置Orion Client
 Orion Client可以通过三类方法配置运行参数
@@ -208,7 +249,7 @@ Orion Client可以通过三类方法配置运行参数
 * 通过当前用户home目录中 {$HOME}/.orion/client.conf 配置文件配置运行参数
 * 通过 /etc/orion/client.conf 配置文件配置运行参数
 
-**上述方法中，通过环境变量配置的优先级最高，系统 /etc 目录中配置文件的优先级最低**
+**上述方法中，通过环境变量配置的优先级最高，系统 `/etc/orion` 目录中配置文件的优先级最低**
 
 Orion Client的配置中分为静态配置部分和动态配置部分。
 * 静态配置部分指的是在目标环境中每次运行CUDA应用程序都保持不变的部分。
@@ -235,20 +276,21 @@ Orion Client的配置中分为静态配置部分和动态配置部分。
 **更多关于Orion vGPU的配置请参看后面章节 “Orion vGPU的使用”**
 
 ### Orion Client日志
-Orion Client日志位于执行应用程序的用户home目录中的 ${HOME}/.orion/log 目录中。每次CUDA应用运行均会在该目录产生一个对应于该次任务的日志文件。
+Orion Client日志位于执行应用程序的用户home目录中的 `${HOME}/.orion/log` 目录中。每次CUDA应用运行均会在该目录产生一个对应于该次任务的日志文件。
 
 
 # 使用Orion vGPU
 本章节介绍在Orion Client环境中，如何为CUDA应用程序配置使用Orion vGPU
 
 ## Orion vGPU资源
-通过安装部署Orion vGPU软件，所有Orion Server所在的GPU服务器内的GPU均加入了一个全局共享的资源池。每个物理GPU均被划分为多个逻辑vGPU。划分vGPU的粒度为启动 Orion Controller 时的 --vgpu 参数指定。通过Orion Controller 的 --vgpu 参数把一个物理GPU划分为n个vGPU，则每个vGPU默认的显存大小为物理GPU显存的n分之一。   
-Orion vGPU不被多个应用程序共享使用。
+通过安装部署Orion vGPU软件，所有Orion Server所在的GPU服务器内的GPU均加入了一个全局共享的资源池。每个物理GPU均被划分为多个逻辑vGPU。划分vGPU的粒度为启动 Orion Server 时，配置文件 `/etc/orion/server.conf` 中的 `vgpu_count` 参数指定。若设置 `vgpu_count=n`，则每个vGPU默认的显存大小为物理GPU显存的 n 分之一。
 
 ## Orion vGPU的使用
 由于Orion vGPU的调用接口兼容物理GPU的调用接口，因此CUDA应用程序可以无感知无修改地像使用物理GPU那样使用Orion vGPU。仅需要在运行CUDA应用程序时，通过配置文件、环境变量为本CUDA应用程序配置运行环境即可。   
-经过Orion GPU资源池化之后，资源池中的vGPU使用模式为CUDA应用程序即时申请即时使用的模式。也即是当CUDA应用程序调用CUDA接口初始化时才向Orion GPU资源池申请一定数量的vGPU，当CUDA应用程序退出时其申请到的vGPU自动释放至资源池中。多次调用CUDA应用程序分配到的vGPU不一定对应于同样的物理GPU资源。   
-当Orion Client的静态环境配置完毕后，在运行一个CUDA应用之前，至少需要用 ORION_VGPU 环境变量指明该CUDA应用程序希望获得的vGPU数目。可选的，可以用 ORION_GMEM 环境变量忽略 Orion Controller 中关于每个vGPU的默认显存的设置。例如一个deviceQuery CUDA程序，如下的命令使得当该CUDA程序做设备发现时，通过CUDA的接口查询到2个GPU，每个GPU的显存是4096MiB。
+
+经过Orion GPU资源池化之后，资源池中的vGPU使用模式为CUDA应用程序即时申请即时使用的模式。也即是当CUDA应用程序调用CUDA接口初始化时才向Orion GPU资源池申请一定数量的vGPU，当CUDA应用程序退出时其申请到的vGPU自动释放至资源池中。多次调用CUDA应用程序分配到的vGPU不一定对应于同样的物理GPU资源。 
+
+当Orion Client的静态环境配置完毕后，在运行一个CUDA应用之前，至少需要用 ORION_VGPU 环境变量指明该CUDA应用程序希望获得的vGPU数目。例如一个deviceQuery CUDA程序，如下的命令使得当该CUDA程序做设备发现时，通过CUDA的接口查询到2个GPU，每个GPU的显存是4096MiB。
 ```
 export ORION_VGPU=2
 export ORION_GMEM=4096
@@ -258,71 +300,93 @@ export ORION_GMEM=4096
 
 **vGPU的使用对象为CUDA应用程序，而非物理机、Container或者VM虚拟机。即使在同一个环境下运行的多个CUDA应用程序，每一个应用程序都按照当前的运行环境向Orion GPU资源池申请独立的vGPU资源。如果并行运行多个CUDA应用程序，则消耗的vGPU数量为应用程序数目乘以 ORION_VGPU 所指定的vGPU数目。**
 
-# SHM通讯加速
-对于本地GPU虚拟化方案，由于Orion Server和Orion Client都在同一个物理机器上，Orion支持使用基于共享内存的通讯加速——SHM通讯加速。打开SHM通讯加速的配置只需要在Orion Server端的配置文件中设置打开即可。针对不同的CUDA应用程序的运行环境不同，一些必须的步骤也不尽相同。
+# SHM 通讯加速
+对于本地GPU虚拟化方案，由于 Orion Server 和 Orion Client 都在同一个物理机器上，Orion支持使用基于共享内存的通讯加速——SHM通讯加速。
 
-**对于本地GPU虚拟化方案，一个资源池在同一时刻仅仅支持一种运行环境配置。因此以下的SHM配置不会同时生效。**
+## SHM 通讯加速配置
 
-## CUDA应用程序运行在和Orion Server相同系统中
-在完成Orion Server 部署之后，在Orion Client运行之前，使用如下的命令创建SHM加速设备
-```
-sudo orion-shm
-```
-**由于该设备基于共享内存，因此每次系统重启都需要手动创建一次。**
+### Orion Server 配置
+
+首先需要在配置文件 `/etc/orion/server.conf` 中设置 `enable_shm = true` 。
+
+此外，需要根据需要加速的 Orion Client 是否运行在 KVM 虚拟机中，设置 `enable_kvm` 项：
+
+- Orion Client 端运行在 KVM 虚拟机中：在 `/etc/orion/server.conf` 设置 `enable_kvm = true`
+
+- Orion Client 端运行在 Docker 容器中：在 `/etc/orion/server.conf` 设置 `enable_kvm = false`
 
 ## CUDA应用程序运行在 Container 中
-在该种使用场景中，如果使用了Kubernetes作为容器编排框架，Orion vGPU软件提供了Kubernetes Device Plugin来管理SHM加速设备，并不需要用户手动操作。   
-如果用户通过手动执行 Docker run 来运行CUDA应用的容器，则需要手动 mount 一个SHM加速设备到应用容器当中。例如
-```
-sudo orion-shm -i 1
-sudo docker run -v /dev/shm/orionsock1:/dev/shm/orionsock1:rw ...
-```
-上述命令首先通过orion-shm创建一个索引号为1的SHM加速设备，该命令会在/dev/shm目录中生成SHM设备 orionsock1。docker run执行时，需要用 -v 参数把该设备mount到container内完全相同的路径中，并且打开读写权限。
 
-**不同的Container实例必须mount不同的SHM设备**
+对于社区版本的 Orion vGPU 软件，只需要让容器工作在 `ipc host` 模式下，即可自动支持使用 SHM 加速。
+
+具体地：
+
+- 对于 `docker run` 方式启动容器，需要加上 `--ipc host` 参数；
+
+- 对于 Kubernetes 启动的容器 Pod，需要在 `.yaml` 配置文件中指定 `hostIPC: true`。
+
+  （可参见我们提供的 [`deploy-client.yaml`](../orion-kubernetes-deploy/deploy-client.yaml)）
 
 ## CUDA应用程序运行在基于 QEMU-KVM 的虚拟机中
-在该种使用场景中，不需要手动维护SHM设备。
+
+本使用场景中，不需要手动维护SHM设备。只要 Orion Server 配置正确，即可使用 SHM 加速。
 
 # 故障排查
-Orion vGPU软件提供了健康检查的工具 orion-check 来帮助用户在各个阶段下检测环境和排查故障。包括在安装部署之前检查环境配置以及在运行启动过程中检查故障。
+
+Orion vGPU软件提供了健康检查的工具 `orion-check` 来帮助用户在各个阶段下检测环境和排查故障。包括在安装部署之前检查环境配置以及在运行启动过程中检查故障。
+
+`orion-check` 工具在克隆的 repo 中的 `orion-server` 目录下可以找到。安装 Orion Server 时会将它拷贝到 `/usr/bin` 路径下。安装 Orion Client Runtime 时，安装包也会将它放到 容器或虚拟机中的 `/usr/bin` 路径下。
 
 ## 在安装部署之前检查环境兼容性
 
-把Orion安装包拷贝至目标环境，以存放路径为 /root/Orion-1.1.1 为例。
-
 * 检查安装Orion Controller的环境
+
+```bash
+    orion-check install controller
 ```
-    sudo /root/Orion-1.1.1/orion-check install controller
-```
+
 * 检查安装Orion Server的环境
+
+```bash
+    orion-check install server
 ```
-    sudo /root/Orion-1.1.1/orion-check install server
-```
+
 * 检查安装Orion Client的环境
-```
-    sudo /root/Orion-1.1.1/orion-check install client
+
+```bash
+    orion-check install client
 ```
 
 ## 在安装部署之后检查运行时的健康状况
+
 * 检查Orion Server的运行状态
-```
+
+```bash
     sudo orion-check runtime server
+```
+
+* 在 Orion Client 容器/虚拟机中检查状态
+
+```bash
+    orion-check runtime client
 ```
 
 # 配置文件
 除了通过环境变量和运行二进制时的命令行参数可以控制Orion服务的行为，在Orion Server和Orion Client环境中各有配置文件可以对Orion服务进行配置。
 
-## Orion Server配置文件
-该配置文件位于 /etc/orion/server.conf。在安装部署Orion Server之后该文件被创建
+## Orion Server 配置文件
+该配置文件位于 `/etc/orion/server.conf`。在安装部署Orion Server之后该文件被创建
 
 ### [server] 配置
 
-* listen_port ： Orion Server的监听起始端口。以该端口开始的连续3个端口被用于Orion Server服务。默认值为9960
+* listen_port ： Orion Server的监听起始端口。以该端口开始的连续3个端口被用于Orion Server服务。默认值为 9960
 * bind_addr ：当本机有多个网络地址的时候，通过该参数指定Orion Server绑定地址。默认值为 127.0.0.1
 * enable_shm ：是否启用SHM加速通讯。仅仅在Orion Server和Orion Client部署在同一个物理机的时候可以启用。默认值为 true
 * enable_kvm ：是否支持Orion Client部署在VM里面且使用SHM加速。仅仅在Orion Server和Orion Client部署在同一个物理机的时候可以启用。默认值为 false
 * vgpu_count：每个物理GPU切片为多少个vGPU。取值范围是1~100的任意整数。默认值为 4
+
+### [server-nccl] 配置
+* comm_id : 配置支持 NCCL 作为模型训练后端时所需端口号
 
 ### [server-log] 配置
 * log_with_time ：记录log的时候带时间戳。0表示否，1表示是。
@@ -332,17 +396,16 @@ Orion vGPU软件提供了健康检查的工具 orion-check 来帮助用户在各
 * file_log_level ：磁盘文件输出log的级别。支持 ERROR, WARNING, INFO, DEBUG四个级别
 
 ### [server-shm] 配置
-该字段的配置仅仅当 [server] 字段的 enable_shm 或者 enable_kvm 被设置为 true的时候生效
 * shm_path_base ：OS的共享存储文件的默认位置。默认值为 /dev/shm
 * shm_group_name ：使用 KVM 的时候，虚拟机的的 Linux 用户组名
 * shm_user_name ：使用 KVM 的时候，虚拟机的 Linux 用户名
-* shm_buffer_size ：使用SHM加速的时候，分配的内存大小。默认为128MiB。
+* shm_buffer_size ：使用SHM加速的时候，分配的内存大小 (单位：MiB)。默认为 128 (MiB)。
 
 ### [controller] 配置
 * controller_addr ： 配置Orion Server如何连接Orion Controller
 
-## Orion Client配置文件
-Orion Client的配置文件名为 client.conf，可以放在两个位置。一个是 /etc/orion/client.conf， 另一个是用户home目录的 $HOME/.orion/client.conf。 后者具有更高的优先级。通过安装文件安装Orion Client之后，仅仅把配置文件安装到 /etc/orion 目录中。
+## Orion Client 配置文件
+Orion Client的配置文件名为 client.conf，可以放在两个位置。一个是 `/etc/orion/client.conf`， 另一个是用户home目录的 `$HOME/.orion/client.conf`。 后者具有更高的优先级。通过安装文件安装Orion Client之后，仅仅把配置文件安装到 `/etc/orion` 目录中。
 
 ### [client-log] 配置
 * log_with_time ：记录log的时候带时间戳。0表示否，1表示是。
@@ -355,7 +418,7 @@ Orion Client的配置文件名为 client.conf，可以放在两个位置。一�
 * shm_path_base ：必须和Orion Server环境中的配置一样。默认值为 /dev/shm
 
 ### [controller] 配置
-* controller_addr ： 配置Orion Server如何连接Orion Controller
+* controller_addr ： 配置 Orion Server如何连接 Orion Controller
 
 
 # 常见问题
@@ -375,7 +438,7 @@ Orion Client的配置文件名为 client.conf，可以放在两个位置。一�
     * 借助telnet，nc等命令确认Orion Client可以访问Orion Controller所在环境的 9123 端口。
     * 常见的防火墙配置可能会阻塞Orion Controller所在环境的 9123 端口。包括 CentOS 的 firewalld防火墙，Docker默认自带的 iptables 规则。
 
-* Orion Client端没有打印“Fail to get version information from Orion Controller.” 但是打印 “Client exits without allocation ID”
+* Orion Client端没有打印“Fail to get version information from Orion Controller.” 但是打印 “Fail to get resource from controller”
     * 此故障为Orion Client申请的vGPU资源超出了资源池可分配的资源。请从如下几个方面进行故障排除：
     * 在Orion Server 环境中运行命令 orion-check runtime server。该命令会打印全局资源池中有多少剩余vGPU。如果剩余vGPU为0：
         * 确认是否的确由于正在运行的Orion Client过多从而导致资源耗尽。
@@ -387,18 +450,13 @@ Orion Client的配置文件名为 client.conf，可以放在两个位置。一�
             * ORION_VGPU 和 ORION_GMEM 请求的资源超出单个 GPU 服务器的资源数目
             * 是否通过shell脚本连续多次并发启动多个Orion Client请求。
 
-* Orion Client打印“Client exits with allocation ID ...”但是没有其他更多提示
+* Orion Client打印 “Application exits without Orion resource” 但是没有其他更多提示
     * 此故障可能是Orion Client无法完成和Orion Server的连接导致。请从如下几个方面进行故障排除：
     * 借助netstat等命令确认 Orion Server 环境中的 oriond 后台进程监听在9960，9961 端口上，且监听的网段为 Orion Client 可达的网段
         * 对于 KVM 场景此网段应为虚拟网关IP地址
         * 对于 Docker 场景此网段应为虚拟网关IP地址（常见为docker0虚拟网口）
     * 借助telnet，nc等命令确认Orion Client可以访问Orion Server所在环境的 9960，9961 端口。
     * 常见的防火墙配置可能会阻塞Orion Server所在环境的 9960，9961 端口。包括 CentOS 的 firewalld防火墙，Docker默认自带的 iptables 规则。
-  
-* 本地容器使用共享内存时，应用程序hang住，CPU占有率高，可以检查以下项目。修复后需要重启Orion Server方能生效。
-  * 检查是否共享内存文件在容器内外名字不一致。注意容器内的挂载地址需要和物理地址完全一样，即使用`-v /dev/shm/orionsock<index>:/dev/shm/orionsock<index>:rw`启动容器。
-  * 检查是否多个容器将同一块共享内存挂载进内部。
-  * 检查用户是否曾经手动删除、覆盖、修改`/dev/shm`目录下的某块`orionsock<index>`共享内存
 
 * Orion Server服务无法启动，oriond进程启动失败
     * 通过运行 orion-check runtime server 来检查环境。可能的原因有
