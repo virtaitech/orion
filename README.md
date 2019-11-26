@@ -28,7 +28,7 @@ Orion vGPU软件用户手册
 * [PyTorch 使用Orion vGPU软件加速模型训练与推理](./blogposts/pytorch_models.md)
 
 # What's New
-* **2019/11/20** 简化本地容器使用共享内存加速的配置，支持更多库和框架
+* **2019/11/20** 简化本地容器共享内存配置，支持更多库和框架 （[旧版本更新指南](./how-to-update.md)）
 
     配置简化：本地容器不需要挂载 /dev/shm/orionsock 共享内存 （**要求 host IPC 权限**）
 
@@ -59,11 +59,9 @@ Orion vGPU软件用户手册
 
 * **2019/09/03** 支持多CUDA版本：CUDA 9.0, 9.1, 9.2, 10.0； 提供 k8s-orion-plugin
 
-    Orion Server 可以动态支持多种CUDA版本共存，只需要确保`/usr/local`目录下有对应的CUDA SDK，例如`/usr/local/cuda-10.0`，`/usr/local/cuda-9.0`。
-    
-    对多版本的支持既不需要设置`/usr/local/cuda`软链接，也不需要设置环境变量。
-    
-    Orion Client端，取决于用户程序的需求，需要安装对应于不同CUDA版本的 Orion Client Runtime。
+    Orion Server 可以动态支持多种CUDA版本共存，只需要确保 `/usr/local` 目录下有对应的CUDA SDK，例如 `/usr/local/cuda-10.0`，`/usr/local/cuda-9.0`。
+        
+    Orion Client端，取决于用户程序的需求，需要安装对应于不同 CUDA 版本的 Orion Client Runtime。
 
 # Contact Us
 

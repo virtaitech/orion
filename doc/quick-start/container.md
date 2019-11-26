@@ -45,7 +45,7 @@
 
 根据上述讨论，我们保留安装 Orion Server 后 `/etc/orion/server.conf` 中的默认配置即可。
 
-## **Orion Client容器启动**
+## **Orion Client 配置与启动**
 
 我们提供配置好 Orion Client Runtime 的 TensorFlow 2.0 的 [Docker镜像](../../client-dockerfiles/client-cu10.0-tf2.0-py3)：
 
@@ -208,7 +208,7 @@ ssh -Nf -L 8888:localhost:8888 <username@client-machine>
 
 一步步执行下来，用户会最终开始训练过程：
 
-![train-epoch-2](./figures/pix2pix/train-epoch-14.png)
+![train-epoch-14](./figures/pix2pix/train-epoch-14.png)
 
 训练的过程中，我们可以在宿主机上通过 `nvidia-smi` 工作监视物理 GPU 的使用情况：
 
@@ -217,3 +217,5 @@ ssh -Nf -L 8888:localhost:8888 <username@client-machine>
 从图中可以看到，真正使用物理GPU的进程是 Orion Server 的服务进程 `/usr/bin/oriond`，而不是容器中正在执行 TensorFlow 任务的 Python 进程。这表明容器中的应用程序使用的是 Orion vGPU 资源，对物理GPU 的访问完全由 Orion Server 所接管。
 
 训练完 150 个 epochs 以后，可以在测试集上运行模型。
+
+![inference](./figures/pix2pix/inference.png)
