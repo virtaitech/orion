@@ -1,5 +1,5 @@
 # 概述
-Orion Kubernetes device plugin为符合 Kubernetes device plugin接口规范的设备扩展插件。配合Orion GPU虚拟化方案，可以无缝地在一个Kubernetes机群里面添加Oiron的vGPU资源，从而在部署应用的时候，使用Orion vGPU。
+Orion Kubernetes device plugin 为符合 Kubernetes device plugin 接口规范的设备扩展插件。配合 Orion GPU 虚拟化方案，可以无缝地在一个Kubernetes 集群里面添加 Orion 的 vGPU 资源，从而在部署应用的时候，使用 Orion vGPU。
 
 Orion的虚拟化方案分为本地GPU虚拟化方案和分布式GPU资源池化方案（具体参看 [User Guide](Orion-User-Guide.md)），Orion Kubernetes device plugin支持两种虚拟化方案，但是本文档仅仅针对本地GPU虚拟化方案提供部署方案。
 
